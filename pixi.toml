@@ -1,0 +1,11 @@
+[workspace]
+authors = ["trdthg <trdthg47@gmail.com>"]
+channels = ["riscv"]
+name = "pixi-riscv"
+platforms = ["linux-riscv64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+rattler-build = ">=0.31.1,<0.32"

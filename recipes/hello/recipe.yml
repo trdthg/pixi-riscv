@@ -1,0 +1,24 @@
+context:
+  version: "0.1.0"
+  name: "hello"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  path: ./hello.c
+
+build:
+  number: 0
+  script:
+    - mkdir -p $PREFIX/bin
+    - $CC -o $PREFIX/bin/hello hello.c
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+
+tests:
+  script:
+    - hello

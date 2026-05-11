@@ -33,17 +33,11 @@ jobs:
       #   with:
       #     pixi-version: v0.68.0
 
-      - name: Add .pixi/envs/default/bin to the $PATH
-        shell: bash
-        run: |
-          echo "$(pwd)/.pixi/envs/default/bin" >> $GITHUB_PATH
-
       - name: Run code in changed subdirectories
         shell: bash
         run: |
           rattler-build build --recipe-dir . \
-            --skip-existing=all --target-platform=${{ matrix.target }} \
-            -c riscv -c https://prefix.dev/riscv
+            --skip-existing=all --target-platform=${{ matrix.target }}
 
       - name: Upload all packages
         shell: bash

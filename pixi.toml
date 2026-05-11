@@ -1,6 +1,6 @@
 [workspace]
 authors = ["trdthg <trdthg47@gmail.com>"]
-channels = ["riscv"]
+channels = ["riscv", "conda-forge"]
 name = "pixi-riscv"
 platforms = ["linux-riscv64"]
 version = "0.1.0"

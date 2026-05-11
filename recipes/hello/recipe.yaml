@@ -13,12 +13,12 @@ build:
   number: 0
   script:
     - mkdir -p $PREFIX/bin
-    - $CC -o $PREFIX/bin/hello hello.c
+    - gcc -o $PREFIX/bin/hello hello.c
 
-requirements:
-  build:
-    - ${{ compiler("rust") }}
+# requirements:
+#   build:
+#     - ${{ compiler("c") }}
 
 tests:
-  script:
-    - hello
+  - script:
+      - hello

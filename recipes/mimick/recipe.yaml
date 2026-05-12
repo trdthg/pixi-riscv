@@ -14,14 +14,14 @@ source:
 build:
   number: 0
   script:
-    - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DBUILD_TESTING=OFF
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DBUILD_TESTING=OFF
     - cmake --build build --parallel $CPU_COUNT
     - cmake --install build
 
-requirements:
-  build:
-    - cmake
-    - ninja
+# requirements:
+#   build:
+#     - cmake
+#     - ninja
 
 tests:
   - files:

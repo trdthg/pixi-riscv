@@ -1,0 +1,113 @@
+context:
+  name: "rmw-implementation"
+  ros_name: "rmw_implementation"
+  version: "3.0.1"
+  git_rev: "e01f7832f7f795856942245fecc5b655197d0f46"
+  source_dir: "rmw_implementation"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rmw_implementation.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rmw_typesupport" "$PREFIX/share/ament_index/resource_index/rmw_typesupport_c" "$PREFIX/share/ament_index/resource_index/rmw_typesupport_cpp"
+    - |
+      c++ -std=c++17 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden \
+        -DRMW_IMPLEMENTATION_BUILDING_DLL \
+        -DRMW_IMPLEMENTATION_DEFAULT_VISIBILITY=RMW_IMPLEMENTATION_PUBLIC \
+        -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+        -I"$PREFIX/include" -Isrc \
+        -shared src/functions.cpp \
+        -L"$PREFIX/lib" -lrmw -lament_index_cpp -lrcpputils -lrcutils -ldl -Wl,-rpath,"$PREFIX/lib" \
+        -o "$PREFIX/lib/librmw_implementation.so"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rmw_implementation-extras.cmake" <<'EOF'
+      # Bootstrap mode: keep rmw_implementation find_package() usable before a
+      # real DDS-backed RMW implementation is packaged.
+      find_package(rmw_implementation_cmake REQUIRED)
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      printf '%s\n' 'rosidl_typesupport_c;rosidl_typesupport_cpp' > "$PREFIX/share/ament_index/resource_index/rmw_typesupport/${{ ros_name }}"
+    - |
+      printf '%s\n' 'rosidl_typesupport_c' > "$PREFIX/share/ament_index/resource_index/rmw_typesupport_c/${{ ros_name }}"
+    - |
+      printf '%s\n' 'rosidl_typesupport_cpp' > "$PREFIX/share/ament_index/resource_index/rmw_typesupport_cpp/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rmw_implementationConfig.cmake" <<'EOF'
+      find_package(ament_index_cpp REQUIRED)
+      find_package(rcpputils REQUIRED)
+      find_package(rcutils REQUIRED)
+      find_package(rmw REQUIRED)
+      include("${CMAKE_CURRENT_LIST_DIR}/rmw_implementationTargets.cmake")
+      include("${CMAKE_CURRENT_LIST_DIR}/rmw_implementation-extras.cmake")
+      set(rmw_implementation_LIBRARIES rmw_implementation::rmw_implementation)
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rmw_implementationTargets.cmake" <<'EOF'
+      add_library(rmw_implementation::rmw_implementation SHARED IMPORTED)
+      set_target_properties(rmw_implementation::rmw_implementation PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librmw_implementation.so"
+        INTERFACE_LINK_LIBRARIES "rmw::rmw;ament_index_cpp::ament_index_cpp;rcpputils::rcpputils;rcutils::rcutils"
+      )
+      EOF
+
+requirements:
+  host:
+    - ament-index-cpp
+    - rcpputils
+    - rcutils
+    - rmw
+    - rmw-implementation-cmake
+    - rosidl-typesupport-c
+    - rosidl-typesupport-cpp
+  run:
+    - ament-index-cpp
+    - rcpputils
+    - rcutils
+    - rmw
+    - rmw-implementation-cmake
+    - rosidl-typesupport-c
+    - rosidl-typesupport-cpp
+
+# future requirements:
+#   build:
+#     - cxx-compiler
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librmw_implementation.so
+      - test -f $PREFIX/share/rmw_implementation/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rmw_implementation
+      - test -f $PREFIX/share/ament_index/resource_index/rmw_typesupport/rmw_implementation
+      - |
+        cat > test_rmw_implementation.cpp <<'EOF'
+        #include <rmw/rmw.h>
+        int main() {
+          return rmw_get_implementation_identifier() == nullptr ? 0 : 1;
+        }
+        EOF
+      - c++ -std=c++17 -I$PREFIX/include test_rmw_implementation.cpp -L$PREFIX/lib -lrmw_implementation -lrmw -lament_index_cpp -lrcpputils -lrcutils -ldl -Wl,-rpath,$PREFIX/lib -o test_rmw_implementation
+      - AMENT_PREFIX_PATH=$PREFIX ./test_rmw_implementation
+
+about:
+  homepage: https://github.com/ros2/rmw_implementation
+  repository: https://github.com/ros2/rmw_implementation
+  summary: Runtime-selectable proxy for ROS 2 middleware implementations
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

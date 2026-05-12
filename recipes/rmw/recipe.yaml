@@ -1,0 +1,112 @@
+context:
+  name: "rmw"
+  version: "6.1.1"
+  git_rev: "2a4ee718d0da004d5629f50afd2896fbd1f4aedd"
+  source_dir: "rmw"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rmw.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rmw/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R include/rmw "$PREFIX/include/"
+    - cp -R cmake "$PREFIX/share/rmw/"
+    - cp rmw-extras.cmake "$PREFIX/share/rmw/cmake/"
+    - |
+      cc -std=c99 -fPIC -fvisibility=hidden \
+        -Iinclude -I"$PREFIX/include" \
+        -shared \
+        src/allocators.c \
+        src/convert_rcutils_ret_to_rmw_ret.c \
+        src/event.c \
+        src/init.c \
+        src/init_options.c \
+        src/message_sequence.c \
+        src/names_and_types.c \
+        src/network_flow_endpoint_array.c \
+        src/network_flow_endpoint.c \
+        src/publisher_options.c \
+        src/qos_string_conversions.c \
+        src/sanity_checks.c \
+        src/security_options.c \
+        src/subscription_content_filter_options.c \
+        src/subscription_options.c \
+        src/time.c \
+        src/topic_endpoint_info_array.c \
+        src/topic_endpoint_info.c \
+        src/types.c \
+        src/validate_full_topic_name.c \
+        src/validate_namespace.c \
+        src/validate_node_name.c \
+        -L"$PREFIX/lib" -lrcutils -lrosidl_runtime_c -Wl,-rpath,"$PREFIX/lib" \
+        -o "$PREFIX/lib/librmw.so"
+    - cp package.xml "$PREFIX/share/rmw/package.xml"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rmw"
+    - |
+      cat > "$PREFIX/share/rmw/cmake/rmwConfig.cmake" <<'EOF'
+      find_package(rcutils REQUIRED)
+      find_package(rosidl_runtime_c REQUIRED)
+      include("${CMAKE_CURRENT_LIST_DIR}/rmwTargets.cmake")
+      include("${CMAKE_CURRENT_LIST_DIR}/rmw-extras.cmake")
+      set(rmw_LIBRARIES rmw::rmw)
+      set(rmw_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/rmw/cmake/rmwTargets.cmake" <<'EOF'
+      add_library(rmw::rmw SHARED IMPORTED)
+      set_target_properties(rmw::rmw PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librmw.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "rcutils::rcutils;rosidl_runtime_c::rosidl_runtime_c"
+      )
+      EOF
+
+requirements:
+  host:
+    - rcutils
+    - rosidl-runtime-c
+  run:
+    - rcutils
+    - rosidl-runtime-c
+
+# future requirements:
+#   build:
+#     - c-compiler
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librmw.so
+      - test -f $PREFIX/include/rmw/rmw.h
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rmw
+      - test -f $PREFIX/share/rmw/cmake/configure_rmw_library.cmake
+      - |
+        cat > test_rmw.c <<'EOF'
+        #include <rmw/allocators.h>
+        #include <rmw/init_options.h>
+        int main(void) {
+          rmw_init_options_t options = rmw_get_zero_initialized_init_options();
+          return options.impl ? 1 : 0;
+        }
+        EOF
+      - cc -std=c99 -I$PREFIX/include test_rmw.c -L$PREFIX/lib -lrmw -lrcutils -lrosidl_runtime_c -Wl,-rpath,$PREFIX/lib -o test_rmw
+      - ./test_rmw
+
+about:
+  homepage: https://github.com/ros2/rmw
+  repository: https://github.com/ros2/rmw
+  summary: ROS 2 middleware interface C API
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

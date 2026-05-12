@@ -1,0 +1,147 @@
+context:
+  name: "rosidl-typesupport-fastrtps-c"
+  ros_name: "rosidl_typesupport_fastrtps_c"
+  version: "2.2.2"
+  git_rev: "db3130c64a65c06e1104e80eadccf196bfe080a3"
+  source_dir: "rosidl_typesupport_fastrtps_c"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl_typesupport_fastrtps.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/include" "$PREFIX/lib/${{ ros_name }}" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_c" "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages"
+    - cp -R include/${{ ros_name }} "$PREFIX/include/"
+    - cp -R ${{ ros_name }} "$SITE_PACKAGES/"
+    - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
+    - cp -R resource "$PREFIX/share/${{ ros_name }}/"
+    - cp bin/${{ ros_name }} "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - chmod +x "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - |
+      c++ -std=c++14 -fPIC -DROSIDL_TYPESUPPORT_FASTRTPS_C_BUILDING_DLL \
+        -Iinclude -I"$PREFIX/include" \
+        -shared src/identifier.cpp src/wstring_conversion.cpp \
+        -L"$PREFIX/lib" -lrosidl_runtime_c -Wl,-rpath,"$PREFIX/lib" \
+        -o "$PREFIX/lib/lib${{ ros_name }}.so"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - |
+      sed \
+        -e "s#@PYTHON_INSTALL_DIR@#${SITE_PACKAGES#$PREFIX/}#g" \
+        rosidl_typesupport_fastrtps_c-extras.cmake.in > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_fastrtps_c-extras.cmake"
+    - mkdir -p "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: rosidl-typesupport-fastrtps-c
+      Version: ${{ version }}
+      EOF
+    - |
+      cat > "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info/entry_points.txt" <<'EOF'
+      [rosidl_cli.command.generate.typesupport_extensions]
+      fastrtps_c = rosidl_typesupport_fastrtps_c.cli:GenerateFastRTPSCTypesupport
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_c/${{ ros_name }}"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_fastrtps_cConfig.cmake" <<'EOF'
+      find_package(ament_cmake_core REQUIRED)
+      find_package(fastrtps_cmake_module REQUIRED)
+      find_package(fastcdr REQUIRED CONFIG)
+      find_package(rmw REQUIRED)
+      find_package(rosidl_cmake REQUIRED)
+      find_package(rosidl_generator_c REQUIRED)
+      find_package(rosidl_runtime_c REQUIRED)
+      find_package(rosidl_runtime_cpp REQUIRED)
+      find_package(rosidl_typesupport_fastrtps_cpp REQUIRED)
+      find_package(rosidl_typesupport_interface REQUIRED)
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_typesupport_fastrtps_cTargets.cmake")
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_typesupport_fastrtps_c-extras.cmake")
+      set(rosidl_typesupport_fastrtps_c_LIBRARIES rosidl_typesupport_fastrtps_c::rosidl_typesupport_fastrtps_c)
+      set(rosidl_typesupport_fastrtps_c_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_fastrtps_cTargets.cmake" <<'EOF'
+      add_library(rosidl_typesupport_fastrtps_c::rosidl_typesupport_fastrtps_c SHARED IMPORTED)
+      set_target_properties(rosidl_typesupport_fastrtps_c::rosidl_typesupport_fastrtps_c PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librosidl_typesupport_fastrtps_c.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "rosidl_runtime_c::rosidl_runtime_c;rosidl_runtime_cpp::rosidl_runtime_cpp;rosidl_typesupport_fastrtps_cpp::rosidl_typesupport_fastrtps_cpp"
+      )
+      EOF
+
+requirements:
+  host:
+    - ament-cmake-core
+    - ament-index-python
+    - fastcdr
+    - fastrtps-cmake-module
+    - rmw
+    - rosidl-cmake
+    - rosidl-cli
+    - rosidl-generator-c
+    - rosidl-runtime-c
+    - rosidl-runtime-cpp
+    - rosidl-typesupport-fastrtps-cpp
+    - rosidl-typesupport-interface
+  run:
+    - ament-cmake-core
+    - ament-index-python
+    - fastcdr
+    - fastrtps-cmake-module
+    - rmw
+    - rosidl-cmake
+    - rosidl-cli
+    - rosidl-generator-c
+    - rosidl-runtime-c
+    - rosidl-runtime-cpp
+    - rosidl-typesupport-fastrtps-cpp
+    - rosidl-typesupport-interface
+
+# future requirements:
+#   build:
+#     - cxx-compiler
+#   run:
+#     - libstdcxx
+#     - python
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librosidl_typesupport_fastrtps_c.so
+      - test -f $PREFIX/include/rosidl_typesupport_fastrtps_c/identifier.h
+      - test -f $PREFIX/include/rosidl_typesupport_fastrtps_c/wstring_conversion.hpp
+      - test -x $PREFIX/lib/rosidl_typesupport_fastrtps_c/rosidl_typesupport_fastrtps_c
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_typesupport_c/rosidl_typesupport_fastrtps_c
+      - |
+        cat > test_fastrtps_c.c <<'EOF'
+        #include <string.h>
+        #include <rosidl_typesupport_fastrtps_c/identifier.h>
+        int main(void) {
+          return strcmp(rosidl_typesupport_fastrtps_c__identifier, "rosidl_typesupport_fastrtps_c");
+        }
+        EOF
+      - cc -std=c11 -I$PREFIX/include test_fastrtps_c.c -L$PREFIX/lib -lrosidl_typesupport_fastrtps_c -lrosidl_runtime_c -lstdc++ -Wl,-rpath,$PREFIX/lib -o test_fastrtps_c
+      - ./test_fastrtps_c
+
+about:
+  homepage: https://github.com/ros2/rosidl_typesupport_fastrtps
+  repository: https://github.com/ros2/rosidl_typesupport_fastrtps
+  summary: C Fast RTPS/Fast DDS type support generator for ROS interfaces
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

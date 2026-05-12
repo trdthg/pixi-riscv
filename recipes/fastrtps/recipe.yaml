@@ -46,12 +46,14 @@ requirements:
     - tinyxml2
 
 # This recipe intentionally uses the host cmake and compiler on the native
-# riscv runner. Enable these dependencies once the riscv channel has compilers.
+# riscv runner. The CI runner also needs host patchelf for rattler packaging.
+# Enable these dependencies once the riscv channel has compilers and patchelf.
 # future requirements:
 #   build:
 #     - cxx-compiler
 #     - cmake
 #     - make
+#     - patchelf
 #   run:
 #     - libstdcxx
 

@@ -38,6 +38,15 @@ jobs:
       #   with:
       #     pixi-version: v0.68.0
 
+      - name: Ensure host packaging tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v patchelf >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y patchelf
+          fi
+
       - name: Select recipes
         id: recipes
         shell: bash
@@ -89,6 +98,9 @@ jobs:
               'recipes/asio': 580,
               'recipes/tinyxml2': 590,
               'recipes/fastrtps': 600,
+              'recipes/fastrtps-cmake-module': 610,
+              'recipes/rosidl-typesupport-fastrtps-cpp': 620,
+              'recipes/rosidl-typesupport-fastrtps-c': 630,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

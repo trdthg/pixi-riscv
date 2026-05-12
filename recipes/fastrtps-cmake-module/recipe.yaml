@@ -1,0 +1,70 @@
+context:
+  name: "fastrtps-cmake-module"
+  ros_name: "fastrtps_cmake_module"
+  version: "2.2.2"
+  git_rev: "db3130c64a65c06e1104e80eadccf196bfe080a3"
+  source_dir: "fastrtps_cmake_module"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl_typesupport_fastrtps.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
+    - cp ${{ ros_name }}-extras.cmake "$PREFIX/share/${{ ros_name }}/cmake/"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/fastrtps_cmake_module-extras.cmake")
+      EOF
+
+requirements:
+  host:
+    - fastcdr
+    - fastrtps
+  run:
+    - fastcdr
+    - fastrtps
+
+# future requirements:
+#   build:
+#     - cmake
+
+tests:
+  - script:
+      - test -f $PREFIX/share/fastrtps_cmake_module/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/fastrtps_cmake_module
+      - test -f $PREFIX/share/fastrtps_cmake_module/cmake/fastrtps_cmake_moduleConfig.cmake
+      - test -f $PREFIX/share/fastrtps_cmake_module/cmake/Modules/FindFastRTPS.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_fastrtps_cmake_module CXX)
+        find_package(fastrtps_cmake_module REQUIRED)
+        find_package(FastRTPS REQUIRED MODULE)
+        if(NOT FastRTPS_FOUND OR NOT FastRTPS_INCLUDE_DIR OR NOT FastRTPS_LIBRARIES)
+          message(FATAL_ERROR "FastRTPS module did not expose expected variables")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/rosidl_typesupport_fastrtps
+  repository: https://github.com/ros2/rosidl_typesupport_fastrtps
+  summary: CMake module to find eProsima Fast RTPS/Fast DDS for ROS 2 Humble
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

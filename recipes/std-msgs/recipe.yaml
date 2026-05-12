@@ -111,15 +111,15 @@ build:
           if includes:
               body.append('')
           body.extend([
-              f'module {pkg_name} {{',
+              f'module {pkg_name} ' + chr(123),
               '  module msg {',
           ])
           if constants:
-              body.append(f'    module {name}_Constants {{')
+              body.append(f'    module {name}_Constants ' + chr(123))
               for typ, const_name, value in constants:
                   body.append(f'      const {typ} {const_name} = {value};')
               body.append('    };')
-          body.append(f'    struct {name} {{')
+          body.append(f'    struct {name} ' + chr(123))
           for typ, field_name in fields:
               body.append(f'      {typ} {field_name};')
           body.extend(['    };', '  };', '};', ''])
@@ -139,17 +139,17 @@ build:
           body.extend(includes)
           if includes:
               body.append('')
-          body.extend([f'module {pkg_name} {{', '  module srv {'])
-          body.append(f'    struct {name}_Request {{')
+          body.extend([f'module {pkg_name} ' + chr(123), '  module srv ' + chr(123)])
+          body.append(f'    struct {name}_Request ' + chr(123))
           for typ, field_name in req_fields:
               body.append(f'      {typ} {field_name};')
           body.append('    };')
           if res_constants:
-              body.append(f'    module {name}_Response_Constants {{')
+              body.append(f'    module {name}_Response_Constants ' + chr(123))
               for typ, const_name, value in res_constants:
                   body.append(f'      const {typ} {const_name} = {value};')
               body.append('    };')
-          body.append(f'    struct {name}_Response {{')
+          body.append(f'    struct {name}_Response ' + chr(123))
           for typ, field_name in res_fields:
               body.append(f'      {typ} {field_name};')
           body.extend(['    };', '  };', '};', ''])

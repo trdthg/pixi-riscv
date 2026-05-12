@@ -42,6 +42,8 @@ Current policy:
 
 ## P2: rosidl / Interface Generation
 
+- [ ] `rosidl-cli`
+  - Required by `rosidl-adapter` and generator CLI entry points.
 - [ ] `rosidl-adapter`
 - [ ] `rosidl-parser`
 - [ ] `rosidl-cmake`

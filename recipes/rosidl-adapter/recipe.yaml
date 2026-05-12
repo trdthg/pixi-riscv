@@ -1,0 +1,64 @@
+context:
+  name: "rosidl-adapter"
+  version: "3.1.8"
+  git_rev: "8cdfe315157f8bffa9b73b6750c52f44325a7847"
+  source_dir: "rosidl_adapter"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_adapter" "$PREFIX/share/rosidl_adapter/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R rosidl_adapter "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/rosidl_adapter/package.xml"
+    - cp scripts/msg2idl.py "$PREFIX/lib/rosidl_adapter/msg2idl.py"
+    - cp scripts/srv2idl.py "$PREFIX/lib/rosidl_adapter/srv2idl.py"
+    - cp rosidl_adapter-extras.cmake "$PREFIX/share/rosidl_adapter/cmake/rosidl_adapter-extras.cmake"
+    - cp -R cmake "$PREFIX/share/rosidl_adapter/"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_adapter"
+    - mkdir -p "$SITE_PACKAGES/rosidl_adapter-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/rosidl_adapter-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: rosidl-adapter
+      Version: ${{ version }}
+      EOF
+    - |
+      cat > "$SITE_PACKAGES/rosidl_adapter-${{ version }}.dist-info/entry_points.txt" <<'EOF'
+      [rosidl_cli.command.translate.extensions]
+      msg2idl = rosidl_adapter.cli:TranslateMsgToIDL
+      srv2idl = rosidl_adapter.cli:TranslateSrvToIDL
+      action2idl = rosidl_adapter.cli:TranslateActionToIDL
+      EOF
+    - |
+      cat > "$PREFIX/share/rosidl_adapter/cmake/rosidl_adapterConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_adapter-extras.cmake")
+      EOF
+
+tests:
+  - script:
+      - test -f $PREFIX/share/rosidl_adapter/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rosidl_adapter
+      - test -f $PREFIX/share/rosidl_adapter/cmake/rosidl_adapterConfig.cmake
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: Convert .msg/.srv/.action files to .idl
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

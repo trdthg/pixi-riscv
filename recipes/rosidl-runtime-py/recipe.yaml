@@ -1,0 +1,42 @@
+context:
+  name: "rosidl-runtime-py"
+  version: "0.9.3"
+  git_rev: "3971c5f59606fa33097f0ad9c36b6438dbb0b523"
+  source_dir: "."
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl_runtime_py.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/rosidl_runtime_py" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R rosidl_runtime_py "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/rosidl_runtime_py/package.xml"
+    - cp resource/rosidl_runtime_py "$PREFIX/share/ament_index/resource_index/packages/rosidl_runtime_py"
+    - cp setup.py "$PREFIX/share/rosidl_runtime_py/setup.py"
+
+tests:
+  - script:
+      - test -f $PREFIX/share/rosidl_runtime_py/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rosidl_runtime_py
+      - test -f $PREFIX/share/rosidl_runtime_py/setup.py
+
+about:
+  homepage: https://github.com/ros2/rosidl_runtime_py
+  repository: https://github.com/ros2/rosidl_runtime_py
+  summary: Runtime utilities for generated ROS interfaces in Python
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

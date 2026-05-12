@@ -1,0 +1,117 @@
+context:
+  name: "rcutils"
+  version: "5.1.8"
+  git_rev: "cf916d5aa9bfe0655e499d269a88e6053a3eea42"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcutils.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rcutils/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R include/rcutils "$PREFIX/include/"
+    - |
+      cat > "$PREFIX/include/rcutils/logging_macros.h" <<'EOF'
+      #ifndef RCUTILS__LOGGING_MACROS_H_
+      #define RCUTILS__LOGGING_MACROS_H_
+      #include "rcutils/logging.h"
+      #define RCUTILS_LOG_MIN_SEVERITY_DEBUG 0
+      #define RCUTILS_LOG_MIN_SEVERITY_INFO 1
+      #define RCUTILS_LOG_MIN_SEVERITY_WARN 2
+      #define RCUTILS_LOG_MIN_SEVERITY_ERROR 3
+      #define RCUTILS_LOG_MIN_SEVERITY_FATAL 4
+      #define RCUTILS_LOG_MIN_SEVERITY_NONE 5
+      #ifndef RCUTILS_LOG_MIN_SEVERITY
+      #define RCUTILS_LOG_MIN_SEVERITY RCUTILS_LOG_MIN_SEVERITY_DEBUG
+      #endif
+      #define RCUTILS_LOG_COND_NAMED(severity, condition_before, condition_after, name, ...) \
+        do { \
+          RCUTILS_LOGGING_AUTOINIT; \
+          static rcutils_log_location_t __rcutils_logging_location = {__func__, __FILE__, __LINE__}; \
+          if (rcutils_logging_logger_is_enabled_for(name, severity)) { \
+            condition_before \
+            rcutils_log(&__rcutils_logging_location, severity, name, __VA_ARGS__); \
+            condition_after \
+          } \
+        } while (0)
+      #define RCUTILS_LOG_CONDITION_EMPTY
+      #define RCUTILS_LOG_NAMED(severity, name, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EMPTY, RCUTILS_LOG_CONDITION_EMPTY, name, __VA_ARGS__)
+      #define RCUTILS_LOG(severity, ...) RCUTILS_LOG_NAMED(severity, NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_DEBUG_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_DEBUG, name, __VA_ARGS__)
+      #define RCUTILS_LOG_INFO_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_INFO, name, __VA_ARGS__)
+      #define RCUTILS_LOG_WARN_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_WARN, name, __VA_ARGS__)
+      #define RCUTILS_LOG_ERROR_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_ERROR, name, __VA_ARGS__)
+      #define RCUTILS_LOG_FATAL_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_FATAL, name, __VA_ARGS__)
+      #define RCUTILS_LOG_DEBUG(...) RCUTILS_LOG_DEBUG_NAMED(NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_INFO(...) RCUTILS_LOG_INFO_NAMED(NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_WARN(...) RCUTILS_LOG_WARN_NAMED(NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_ERROR(...) RCUTILS_LOG_ERROR_NAMED(NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_FATAL(...) RCUTILS_LOG_FATAL_NAMED(NULL, __VA_ARGS__)
+      #endif
+      EOF
+    - |
+      cc -std=c11 -fPIC -D_GNU_SOURCE -DRCUTILS_BUILDING_DLL -Iinclude -I"$PREFIX/include" -Isrc \
+        -shared \
+        src/allocator.c src/array_list.c src/char_array.c src/cmdline_parser.c src/env.c \
+        src/error_handling.c src/filesystem.c src/find.c src/format_string.c src/hash_map.c \
+        src/logging.c src/process.c src/qsort.c src/repl_str.c src/shared_library.c \
+        src/snprintf.c src/split.c src/strcasecmp.c src/strdup.c src/strerror.c \
+        src/string_array.c src/string_map.c src/testing/fault_injection.c src/time.c \
+        src/time_unix.c src/uint8_array.c \
+        -ldl -latomic -o "$PREFIX/lib/librcutils.so"
+    - cp package.xml "$PREFIX/share/rcutils/package.xml"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rcutils"
+    - |
+      cat > "$PREFIX/share/rcutils/cmake/rcutilsConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/rcutilsTargets.cmake")
+      set(rcutils_LIBRARIES rcutils::rcutils)
+      set(rcutils_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/rcutils/cmake/rcutilsTargets.cmake" <<'EOF'
+      add_library(rcutils::rcutils SHARED IMPORTED)
+      set_target_properties(rcutils::rcutils PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librcutils.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+      )
+      EOF
+
+# requirements:
+#   build:
+#     - c-compiler
+#   run:
+#     - libgcc
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librcutils.so
+      - test -f $PREFIX/include/rcutils/allocator.h
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rcutils
+      - |
+        cat > test_rcutils.c <<'EOF'
+        #include <rcutils/allocator.h>
+        int main(void) {
+          rcutils_allocator_t allocator = rcutils_get_default_allocator();
+          return rcutils_allocator_is_valid(&allocator) ? 0 : 1;
+        }
+        EOF
+      - cc -std=c11 -I$PREFIX/include test_rcutils.c -L$PREFIX/lib -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rcutils
+      - ./test_rcutils
+
+about:
+  homepage: https://github.com/ros2/rcutils
+  repository: https://github.com/ros2/rcutils
+  summary: C utility functions and types used by ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

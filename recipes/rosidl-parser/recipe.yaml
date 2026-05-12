@@ -1,0 +1,44 @@
+context:
+  name: "rosidl-parser"
+  version: "3.1.8"
+  git_rev: "8cdfe315157f8bffa9b73b6750c52f44325a7847"
+  source_dir: "rosidl_parser"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/bin" "$PREFIX/share/rosidl_parser" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R rosidl_parser "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/rosidl_parser/package.xml"
+    - cp bin/idl2png "$PREFIX/bin/idl2png"
+    - chmod +x "$PREFIX/bin/idl2png"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_parser"
+
+tests:
+  - script:
+      - test -f $PREFIX/share/rosidl_parser/package.xml
+      - test -x $PREFIX/bin/idl2png
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rosidl_parser
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: Parser for .idl ROS interface files
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -1,0 +1,50 @@
+context:
+  name: "rosidl-cmake"
+  version: "3.1.8"
+  git_rev: "8cdfe315157f8bffa9b73b6750c52f44325a7847"
+  source_dir: "rosidl_cmake"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/rosidl_cmake/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R rosidl_cmake "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/rosidl_cmake/package.xml"
+    - cp rosidl_cmake-extras.cmake "$PREFIX/share/rosidl_cmake/cmake/rosidl_cmake-extras.cmake"
+    - cp cmake/*.cmake "$PREFIX/share/rosidl_cmake/cmake/"
+    - cp cmake/*.cmake.in "$PREFIX/share/rosidl_cmake/cmake/" 2>/dev/null || true
+    - cp resource "$PREFIX/share/ament_index/resource_index/packages/rosidl_cmake" 2>/dev/null || true
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_cmake"
+    - |
+      cat > "$PREFIX/share/rosidl_cmake/cmake/rosidl_cmakeConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
+      EOF
+
+tests:
+  - script:
+      - test -f $PREFIX/share/rosidl_cmake/package.xml
+      - test -f $PREFIX/share/rosidl_cmake/cmake/rosidl_cmakeConfig.cmake
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rosidl_cmake
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: CMake functionality for ROS interface generation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -1,0 +1,48 @@
+context:
+  name: "ament-package"
+  version: "0.14.2"
+  git_rev: "3c8a92b4dda05be83f6e8e879c70f219180e1384"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ament/ament_package.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - SITE_PACKAGES=$(python -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/ament_package" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R ament_package "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/ament_package/package.xml"
+    - cp resource/ament_package "$PREFIX/share/ament_index/resource_index/packages/ament_package"
+
+# requirements:
+#   build:
+#     - python
+#   run:
+#     - python
+#     - importlib-metadata
+#     - importlib-resources
+
+tests:
+  - script:
+      - SITE_PACKAGES=$(python -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - PYTHONPATH="$SITE_PACKAGES" python -c "import ament_package; print('ament_package ok')"
+      - test -f $PREFIX/share/ament_package/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/ament_package
+
+about:
+  homepage: https://github.com/ament/ament_package
+  repository: https://github.com/ament/ament_package
+  summary: Parser and metadata helpers for ament package manifests
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

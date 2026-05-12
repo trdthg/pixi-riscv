@@ -24,14 +24,12 @@ build:
 #     - ninja
 
 tests:
-  - files:
-      source:
-        - test.c
-    script:
+  - script:
       - test -f $PREFIX/lib/libmimick.a
       - test -f $PREFIX/include/mimick/mimick.h
       - test -f $PREFIX/lib/cmake/mimick/mimickConfig.cmake
-      - gcc test.c -I$PREFIX/include -L$PREFIX/lib -lmimick -ldl -o mimick-smoke
+      - printf '%s\n' '#include <mimick/mimick.h>' 'int main(void) { return 0; }' > mimick-smoke.c
+      - gcc mimick-smoke.c -I$PREFIX/include -L$PREFIX/lib -lmimick -ldl -o mimick-smoke
       - ./mimick-smoke
 
 about:

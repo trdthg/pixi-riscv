@@ -46,5 +46,12 @@ jobs:
         run: |
           # uses trusted publishers for the upload
           for file in output/**/*.conda; do
-            rattler-build upload prefix -c riscv "$file"
+            if ! output=$(rattler-build upload prefix -c riscv "$file" 2>&1); then
+              if grep -q "package already exists (HTTP 409)" <<< "$output"; then
+                echo "Package already exists, skipping: $file"
+              else
+                echo "$output"
+                exit 1
+              fi
+            fi
           done

@@ -68,12 +68,12 @@ Current policy:
 
 ## P4: Message Packages
 
-- [ ] `builtin-interfaces`
-- [ ] `std-msgs`
-- [ ] `geometry-msgs`
+- [x] `builtin-interfaces`
+- [x] `std-msgs`
+- [x] `geometry-msgs`
   - Required for `geometry_msgs/Twist`.
-- [ ] `unique-identifier-msgs`
-- [ ] `action-msgs`
+- [x] `unique-identifier-msgs`
+- [x] `action-msgs`
 
 ## P5: RMW / Communication Layer
 
@@ -105,3 +105,4 @@ Current policy:
 - P0 and P1 have already been uploaded to the `riscv` channel.
 - If a package is pure Python but needs host `python3`, avoid `noarch: python` for now; the current channel does not provide a conda Python package for the test environment.
 - When a package already exists on the channel with the same version and build number, bump `build.number` before re-uploading.
+- P4 message packages currently install interface files, generated `.idl`, ament index entries, and CMake metadata. Generated language runtime libraries and Python message modules are intentionally deferred until the client library/runtime packaging stages.

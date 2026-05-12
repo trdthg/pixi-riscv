@@ -21,7 +21,7 @@ build:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_interfaces"
     - cp -R include/${{ ros_name }} "$PREFIX/include/"
-    - sed -i '/#define RMW_DDS_COMMON__GID_UTILS_HPP_/a #include <ostream>' "$PREFIX/include/${{ ros_name }}/gid_utils.hpp"
+    - sed -i "/#define RMW_DDS_COMMON__GID_UTILS_HPP_/a #include <ostream>" "$PREFIX/include/${{ ros_name }}/gid_utils.hpp"
     - |
       mkdir -p "$PREFIX/include/${{ ros_name }}/msg"
       cat > "$PREFIX/include/${{ ros_name }}/msg/gid.hpp" <<'EOF'

@@ -13,7 +13,6 @@ source:
 
 build:
   number: 0
-  noarch: python
   script:
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')

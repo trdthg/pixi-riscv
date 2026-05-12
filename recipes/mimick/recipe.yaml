@@ -20,8 +20,6 @@ build:
 
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - ${{ compiler("cxx") }}
     - cmake
     - ninja
 
@@ -29,16 +27,11 @@ tests:
   - files:
       source:
         - test.c
-    requirements:
-      run:
-        - ${{ compiler("c") }}
-        - cmake
-        - ninja
     script:
       - test -f $PREFIX/lib/libmimick.a
       - test -f $PREFIX/include/mimick/mimick.h
       - test -f $PREFIX/lib/cmake/mimick/mimickConfig.cmake
-      - ${CC} test.c -I$PREFIX/include -L$PREFIX/lib -lmimick -ldl -o mimick-smoke
+      - gcc test.c -I$PREFIX/include -L$PREFIX/lib -lmimick -ldl -o mimick-smoke
       - ./mimick-smoke
 
 about:

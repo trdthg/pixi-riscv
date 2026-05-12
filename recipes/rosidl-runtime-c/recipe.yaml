@@ -1,0 +1,87 @@
+context:
+  name: "rosidl-runtime-c"
+  version: "3.1.8"
+  git_rev: "8cdfe315157f8bffa9b73b6750c52f44325a7847"
+  source_dir: "rosidl_runtime_c"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rosidl_runtime_c/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages"
+    - cp -R include/rosidl_runtime_c "$PREFIX/include/"
+    - |
+      cc -std=c11 -fPIC -DROSIDL_RUNTIME_C_BUILDING_DLL -Iinclude -I"$PREFIX/include" \
+        -shared src/*.c -L"$PREFIX/lib" -lrcutils -Wl,-rpath,"$PREFIX/lib" \
+        -o "$PREFIX/lib/librosidl_runtime_c.so"
+    - cp package.xml "$PREFIX/share/rosidl_runtime_c/package.xml"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_runtime_c"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/rosidl_runtime_c"
+    - |
+      cat > "$PREFIX/share/rosidl_runtime_c/cmake/rosidl_runtime_cConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_runtime_cTargets.cmake")
+      set(rosidl_runtime_c_LIBRARIES rosidl_runtime_c::rosidl_runtime_c)
+      set(rosidl_runtime_c_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/rosidl_runtime_c/cmake/rosidl_runtime_cTargets.cmake" <<'EOF'
+      add_library(rosidl_runtime_c::rosidl_runtime_c SHARED IMPORTED)
+      set_target_properties(rosidl_runtime_c::rosidl_runtime_c PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librosidl_runtime_c.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "rcutils::rcutils"
+      )
+      EOF
+
+requirements:
+  host:
+    - rcutils
+    - rosidl-typesupport-interface
+  run:
+    - rcutils
+    - rosidl-typesupport-interface
+
+# requirements:
+#   build:
+#     - c-compiler
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librosidl_runtime_c.so
+      - test -f $PREFIX/include/rosidl_runtime_c/string_functions.h
+      - |
+        cat > test_rosidl_runtime_c.c <<'EOF'
+        #include <rosidl_runtime_c/string_functions.h>
+        int main(void) {
+          rosidl_runtime_c__String s;
+          if (!rosidl_runtime_c__String__init(&s)) {
+            return 1;
+          }
+          int ret = rosidl_runtime_c__String__assign(&s, "ok") ? 0 : 2;
+          rosidl_runtime_c__String__fini(&s);
+          return ret;
+        }
+        EOF
+      - cc -std=c11 -I$PREFIX/include test_rosidl_runtime_c.c -L$PREFIX/lib -lrosidl_runtime_c -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rosidl_runtime_c
+      - ./test_rosidl_runtime_c
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: Runtime C support for generated ROS interfaces
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

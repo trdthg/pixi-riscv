@@ -1,0 +1,66 @@
+context:
+  name: "rosidl-runtime-cpp"
+  version: "3.1.8"
+  git_rev: "8cdfe315157f8bffa9b73b6750c52f44325a7847"
+  source_dir: "rosidl_runtime_cpp"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/include" "$PREFIX/share/rosidl_runtime_cpp/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages"
+    - cp -R include/rosidl_runtime_cpp "$PREFIX/include/"
+    - cp -R include/rosidl_typesupport_cpp "$PREFIX/include/"
+    - cp package.xml "$PREFIX/share/rosidl_runtime_cpp/package.xml"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_runtime_cpp"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/rosidl_runtime_cpp"
+    - |
+      cat > "$PREFIX/share/rosidl_runtime_cpp/cmake/rosidl_runtime_cppConfig.cmake" <<'EOF'
+      add_library(rosidl_runtime_cpp::rosidl_runtime_cpp INTERFACE IMPORTED)
+      set_target_properties(rosidl_runtime_cpp::rosidl_runtime_cpp PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "rosidl_runtime_c::rosidl_runtime_c"
+      )
+      set(rosidl_runtime_cpp_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+
+requirements:
+  host:
+    - rosidl-runtime-c
+  run:
+    - rosidl-runtime-c
+
+tests:
+  - script:
+      - test -f $PREFIX/include/rosidl_runtime_cpp/message_initialization.hpp
+      - |
+        cat > test_rosidl_runtime_cpp.cpp <<'EOF'
+        #include <rosidl_runtime_cpp/message_initialization.hpp>
+        int main() {
+          auto init = rosidl_runtime_cpp::MessageInitialization::ALL;
+          return init == rosidl_runtime_cpp::MessageInitialization::ALL ? 0 : 1;
+        }
+        EOF
+      - c++ -std=c++14 -I$PREFIX/include test_rosidl_runtime_cpp.cpp -o test_rosidl_runtime_cpp
+      - ./test_rosidl_runtime_cpp
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: Runtime C++ support for generated ROS interfaces
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -60,7 +60,7 @@ build:
               pkg, name = type_name.split('/', 1)
               value = f'{pkg}::msg::{name}'
           else:
-              value = primitive_map.get(type_name, f'${{ ros_name }}::msg::{type_name}')
+              value = primitive_map.get(type_name, f'{pkg_name}::msg::{type_name}')
           if suffix == '[]':
               return f'sequence<{value}>'
           if suffix.startswith('['):
@@ -77,7 +77,7 @@ build:
               pkg, name = type_name.split('/', 1)
               return f'#include "{pkg}/msg/{name}.idl"'
           if type_name not in primitive_map and type_name[:1].isupper():
-              return f'#include "${{ ros_name }}/msg/{type_name}.idl"'
+              return f'#include "{pkg_name}/msg/{type_name}.idl"'
           return None
 
       def parse_fields(lines):
@@ -110,7 +110,7 @@ build:
           if includes:
               body.append('')
           body.extend([
-              f'module ${{ ros_name }} {{',
+              f'module {pkg_name} {{',
               '  module msg {',
           ])
           if constants:
@@ -138,7 +138,7 @@ build:
           body.extend(includes)
           if includes:
               body.append('')
-          body.extend([f'module ${{ ros_name }} {{', '  module srv {'])
+          body.extend([f'module {pkg_name} {{', '  module srv {'])
           body.append(f'    struct {name}_Request {{')
           for typ, field_name in req_fields:
               body.append(f'      {typ} {field_name};')
@@ -154,6 +154,7 @@ build:
           body.extend(['    };', '  };', '};', ''])
           return '\n'.join(body)
 
+      pkg_name = '${{ ros_name }}'
       files = "${{ interface_files }}".split()
       out_base = Path('/tmp/${{ ros_name }}_idl')
       tuples = []

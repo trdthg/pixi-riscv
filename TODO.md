@@ -22,13 +22,13 @@ Current policy:
 ## P1: ament / colcon Foundation
 
 - [x] `ament-index-python`
-- [ ] `ament-index-cpp`
-- [ ] `ament-cmake-gen-version-h`
+- [x] `ament-index-cpp`
+- [x] `ament-cmake-gen-version-h`
   - Required by `ament-index-cpp`.
 - [x] `ament-cmake-core`
 - [x] `ament-cmake`
 - [x] `ament-cmake-python`
-- [ ] `ament-cmake-ros`
+- [x] `ament-cmake-ros`
 - [x] `ament-cmake-target-dependencies`
 - [x] `ament-cmake-include-directories`
 - [x] `ament-cmake-libraries`
@@ -99,6 +99,6 @@ Current policy:
 
 ## Notes
 
-- `mimick`, `pybind11`, `ament-package`, `ament-index-python`, and the core `ament-cmake-*` module packages have already been uploaded to the `riscv` channel.
+- P0 and P1 have already been uploaded to the `riscv` channel.
 - If a package is pure Python but needs host `python3`, avoid `noarch: python` for now; the current channel does not provide a conda Python package for the test environment.
 - When a package already exists on the channel with the same version and build number, bump `build.number` before re-uploading.

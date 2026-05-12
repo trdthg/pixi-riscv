@@ -77,9 +77,9 @@ Current policy:
 
 ## P5: RMW / Communication Layer
 
-- [ ] `rosidl-typesupport-introspection-c`
+- [x] `rosidl-typesupport-introspection-c`
   - Shared prerequisite for CycloneDDS and FastDDS RMW implementations.
-- [ ] `rosidl-typesupport-introspection-cpp`
+- [x] `rosidl-typesupport-introspection-cpp`
   - Shared prerequisite for CycloneDDS and FastDDS RMW implementations.
 - [x] `rmw`
 - [x] `rmw-implementation-cmake`
@@ -93,7 +93,7 @@ Current policy:
   - Alternative path if matching the existing source build path is more practical.
 - [ ] `rmw-fastrtps-shared-cpp`
 - [ ] `rmw-fastrtps-dynamic-cpp`
-- [ ] `fastcdr`
+- [x] `fastcdr`
   - FastDDS serialization dependency.
 - [ ] `fastrtps`
   - FastDDS transport library dependency.

@@ -87,7 +87,7 @@ jobs:
       - name: Upload all packages
         shell: bash
         # do not upload on PR
-        if: github.event_name == 'push' && steps.recipes.outputs.has_recipes == 'true'
+        if: github.event_name != 'pull_request' && steps.recipes.outputs.has_recipes == 'true'
         run: |
           # uses trusted publishers for the upload
           for file in output/**/*.conda; do

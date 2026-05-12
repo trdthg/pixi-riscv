@@ -1,4 +1,4 @@
-name: Build all packages
+name: Build recipes
 
 # this is important for trusted publishing
 permissions:
@@ -9,6 +9,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      recipe:
+        description: "Recipe name or path to build, for example 'mimick' or 'recipes/mimick'. Leave empty to build all recipes."
+        required: false
+        type: string
   pull_request:
     branches:
       - main
@@ -26,32 +31,65 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       # Use pre-installed pixi now
       # - uses: prefix-dev/setup-pixi@v0.9.4
       #   with:
       #     pixi-version: v0.68.0
 
-      - name: Run code in changed subdirectories
+      - name: Select recipes
+        id: recipes
         shell: bash
         run: |
-          rattler-build build --recipe-dir . \
-            --skip-existing=all --target-platform=${{ matrix.target }}
+          set -euo pipefail
+
+          recipe_input="${{ github.event.inputs.recipe || '' }}"
+          if [ -n "$recipe_input" ]; then
+            recipe_input="${recipe_input#recipes/}"
+            recipe_input="${recipe_input%/}"
+            if [ "$recipe_input" = "all" ]; then
+              find recipes -mindepth 2 -maxdepth 2 -name recipe.yaml -printf '%h\n' | sort > /tmp/recipes-to-build
+            elif [ -f "recipes/${recipe_input}/recipe.yaml" ]; then
+              printf 'recipes/%s\n' "$recipe_input" > /tmp/recipes-to-build
+            else
+              echo "Unknown recipe: $recipe_input"
+              exit 1
+            fi
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | awk -F/ '/^recipes\/[^/]+\// { print $1 "/" $2 }' | sort -u > /tmp/recipes-to-build
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            git diff --name-only ${{ github.event.before }} ${{ github.sha }} | awk -F/ '/^recipes\/[^/]+\// { print $1 "/" $2 }' | sort -u > /tmp/recipes-to-build
+          else
+            find recipes -mindepth 2 -maxdepth 2 -name recipe.yaml -printf '%h\n' | sort > /tmp/recipes-to-build
+          fi
+
+          if [ ! -s /tmp/recipes-to-build ]; then
+            echo "No changed recipes to build."
+            echo "has_recipes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Selected recipes:"
+          cat /tmp/recipes-to-build
+          echo "has_recipes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build selected recipes
+        if: steps.recipes.outputs.has_recipes == 'true'
+        shell: bash
+        run: |
+          rm -rf output
+          while IFS= read -r recipe_dir; do
+            rattler-build build --recipe-dir "$recipe_dir" \
+              --target-platform=${{ matrix.target }}
+          done < /tmp/recipes-to-build
 
       - name: Upload all packages
         shell: bash
         # do not upload on PR
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.recipes.outputs.has_recipes == 'true'
         run: |
           # uses trusted publishers for the upload
           for file in output/**/*.conda; do
-            if ! output=$(rattler-build upload prefix -c riscv "$file" 2>&1); then
-              if grep -q "package already exists (HTTP 409)" <<< "$output"; then
-                echo "Package already exists, skipping: $file"
-              else
-                echo "$output"
-                exit 1
-              fi
-            fi
+            rattler-build upload prefix -c riscv "$file"
           done

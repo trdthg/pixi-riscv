@@ -1,0 +1,84 @@
+context:
+  name: "fastrtps"
+  version: "2.6.11"
+  git_rev: "61f8b6406626a9b91ccbd98c1286d96f4fedab92"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/eProsima/Fast-DDS.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p build
+    - cd build
+    - |
+      cmake .. \
+        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=ON \
+        -DTHIRDPARTY=OFF \
+        -DCOMPILE_TOOLS=OFF \
+        -DCOMPILE_EXAMPLES=OFF \
+        -DSECURITY=OFF \
+        -DNO_TLS=ON \
+        -DSQLITE3_SUPPORT=OFF \
+        -DFASTDDS_STATISTICS=OFF \
+        -DBUILD_DOCUMENTATION=OFF \
+        -DBUILD_TESTING=OFF \
+        -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE
+    - cmake --build . --target install -- -j"$(nproc)"
+
+requirements:
+  host:
+    - asio
+    - fastcdr
+    - foonathan-memory
+    - tinyxml2
+  run:
+    - asio
+    - fastcdr
+    - foonathan-memory
+    - tinyxml2
+
+# This recipe intentionally uses the host cmake and compiler on the native
+# riscv runner. Enable these dependencies once the riscv channel has compilers.
+# future requirements:
+#   build:
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libfastrtps.so
+      - test -f $PREFIX/include/fastdds/dds/domain/DomainParticipant.hpp
+      - test -f $PREFIX/include/fastrtps/Domain.h
+      - test -f $PREFIX/share/fastrtps/cmake/fastrtps-config.cmake
+      - |
+        cat > test_fastrtps.cpp <<'EOF'
+        #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+        int main() {
+          auto factory = eprosima::fastdds::dds::DomainParticipantFactory::get_instance();
+          return factory == nullptr ? 1 : 0;
+        }
+        EOF
+      - c++ -std=c++11 -I$PREFIX/include test_fastrtps.cpp -L$PREFIX/lib -lfastrtps -lfastcdr -lfoonathan_memory-0.7.4 -ltinyxml2 -pthread -Wl,-rpath,$PREFIX/lib -o test_fastrtps
+      - ./test_fastrtps
+
+about:
+  homepage: https://github.com/eProsima/Fast-DDS
+  repository: https://github.com/eProsima/Fast-DDS
+  summary: eProsima Fast DDS C++ library
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

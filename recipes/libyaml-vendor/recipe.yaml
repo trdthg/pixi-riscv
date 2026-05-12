@@ -1,0 +1,78 @@
+context:
+  name: "libyaml-vendor"
+  ros_name: "libyaml_vendor"
+  version: "1.2.2"
+  git_rev: "239f695ceaa0820255f3d0fe02ec8c2bd41b8e78"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/libyaml_vendor.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - cp libyaml_vendor-extras.cmake "$PREFIX/share/${{ ros_name }}/cmake/libyaml_vendor-extras.cmake"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/libyaml_vendorConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/libyaml_vendor-extras.cmake")
+      find_path(yaml_INCLUDE_DIR yaml.h)
+      find_library(yaml_LIBRARY yaml)
+      if(yaml_INCLUDE_DIR)
+        set(yaml_INCLUDE_DIRS "${yaml_INCLUDE_DIR}")
+      endif()
+      if(yaml_LIBRARY)
+        set(yaml_LIBRARIES "${yaml_LIBRARY}")
+        if(NOT TARGET yaml)
+          add_library(yaml UNKNOWN IMPORTED)
+          set_target_properties(yaml PROPERTIES
+            IMPORTED_LOCATION "${yaml_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${yaml_INCLUDE_DIR}"
+          )
+        endif()
+      endif()
+      set(libyaml_vendor_TARGETS yaml)
+      EOF
+
+# This bootstrap recipe intentionally uses the system libyaml available on the
+# riscv runner. Enable these dependencies once the riscv channel has them.
+# requirements:
+#   build:
+#     - c-compiler
+#     - cmake
+#   run:
+#     - libyaml
+
+tests:
+  - script:
+      - test -f $PREFIX/share/libyaml_vendor/package.xml
+      - test -f $PREFIX/share/libyaml_vendor/cmake/libyaml_vendorConfig.cmake
+      - test -f $PREFIX/share/ament_index/resource_index/packages/libyaml_vendor
+      - |
+        cat > test_yaml.c <<'EOF'
+        #include <yaml.h>
+        int main(void) {
+          yaml_parser_t parser;
+          return yaml_parser_initialize(&parser) ? 0 : 1;
+        }
+        EOF
+      - cc -std=c11 test_yaml.c -lyaml -o test_yaml
+      - ./test_yaml
+
+about:
+  homepage: https://github.com/ros2/libyaml_vendor
+  repository: https://github.com/ros2/libyaml_vendor
+  summary: ROS 2 vendor package shim for system libyaml
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

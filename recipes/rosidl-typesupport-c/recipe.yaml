@@ -1,0 +1,133 @@
+context:
+  name: "rosidl-typesupport-c"
+  ros_name: "rosidl_typesupport_c"
+  version: "2.0.2"
+  git_rev: "94c7b6d6db353cf26adc22cb7023833fd6cd18a1"
+  source_dir: "rosidl_typesupport_c"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl_typesupport.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/include" "$PREFIX/lib/${{ ros_name }}" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_c"
+    - cp -R include/${{ ros_name }} "$PREFIX/include/"
+    - cp -R ${{ ros_name }} "$SITE_PACKAGES/"
+    - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
+    - cp -R resource "$PREFIX/share/${{ ros_name }}/"
+    - cp bin/${{ ros_name }} "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - chmod +x "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - cc -std=c11 -fPIC -DROSIDL_TYPESUPPORT_C_BUILDING_DLL -Iinclude -I"$PREFIX/include" -c src/identifier.c -o /tmp/rosidl_typesupport_c_identifier.o
+    - |
+      c++ -std=c++14 -fPIC -DROSIDL_TYPESUPPORT_C_BUILDING_DLL \
+        -Iinclude -Isrc -I"$PREFIX/include" \
+        -shared /tmp/rosidl_typesupport_c_identifier.o src/message_type_support_dispatch.cpp src/service_type_support_dispatch.cpp \
+        -L"$PREFIX/lib" -lrosidl_runtime_c -lrcpputils -lrcutils -ldl -Wl,-rpath,"$PREFIX/lib" \
+        -o "$PREFIX/lib/lib${{ ros_name }}.so"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - |
+      sed \
+        -e "s#@PYTHON_INSTALL_DIR@#${SITE_PACKAGES#$PREFIX/}#g" \
+        -e "s#@rosidl_typesupport_c_LIBRARY_TYPE@#SHARED#g" \
+        rosidl_typesupport_c-extras.cmake.in > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_c-extras.cmake"
+    - mkdir -p "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: rosidl-typesupport-c
+      Version: ${{ version }}
+      EOF
+    - |
+      cat > "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info/entry_points.txt" <<'EOF'
+      [rosidl_cli.command.generate.typesupport_extensions]
+      c = rosidl_typesupport_c.cli:GenerateCTypesupport
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_c/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_cConfig.cmake" <<'EOF'
+      find_package(rcutils REQUIRED)
+      find_package(rcpputils REQUIRED)
+      find_package(rosidl_runtime_c REQUIRED)
+      find_package(rosidl_typesupport_interface REQUIRED)
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_typesupport_cTargets.cmake")
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_typesupport_c-extras.cmake")
+      set(rosidl_typesupport_c_LIBRARIES rosidl_typesupport_c::rosidl_typesupport_c)
+      set(rosidl_typesupport_c_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_cTargets.cmake" <<'EOF'
+      add_library(rosidl_typesupport_c::rosidl_typesupport_c SHARED IMPORTED)
+      set_target_properties(rosidl_typesupport_c::rosidl_typesupport_c PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librosidl_typesupport_c.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "rosidl_runtime_c::rosidl_runtime_c;rcpputils::rcpputils;rcutils::rcutils"
+      )
+      EOF
+
+requirements:
+  host:
+    - ament-cmake-core
+    - ament-index-python
+    - rcutils
+    - rcpputils
+    - rosidl-cmake
+    - rosidl-generator-c
+    - rosidl-runtime-c
+    - rosidl-typesupport-interface
+  run:
+    - ament-cmake-core
+    - ament-index-python
+    - rcutils
+    - rcpputils
+    - rosidl-cmake
+    - rosidl-generator-c
+    - rosidl-runtime-c
+    - rosidl-typesupport-interface
+
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#   run:
+#     - libstdcxx
+#     - python
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librosidl_typesupport_c.so
+      - test -f $PREFIX/include/rosidl_typesupport_c/identifier.h
+      - test -x $PREFIX/lib/rosidl_typesupport_c/rosidl_typesupport_c
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_typesupport_c/rosidl_typesupport_c
+      - |
+        cat > test_typesupport_c.c <<'EOF'
+        #include <string.h>
+        #include <rosidl_typesupport_c/identifier.h>
+        int main(void) {
+          return strcmp(rosidl_typesupport_c__typesupport_identifier, "rosidl_typesupport_c");
+        }
+        EOF
+      - cc -std=c11 -I$PREFIX/include test_typesupport_c.c -L$PREFIX/lib -lrosidl_typesupport_c -lrosidl_runtime_c -lrcpputils -lrcutils -lstdc++ -Wl,-rpath,$PREFIX/lib -o test_typesupport_c
+      - ./test_typesupport_c
+
+about:
+  homepage: https://github.com/ros2/rosidl_typesupport
+  repository: https://github.com/ros2/rosidl_typesupport
+  summary: C dispatch layer for ROS interface type support
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -1,0 +1,97 @@
+context:
+  name: "tracetools"
+  version: "4.1.2"
+  git_rev: "3c159b382d2d565e26eaa91e39c9ec06a5c6fe88"
+  source_dir: "tracetools"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/ros2_tracing.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/include/tracetools" "$PREFIX/lib" "$PREFIX/lib/tracetools" "$PREFIX/share/tracetools/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp include/tracetools/*.h include/tracetools/*.hpp "$PREFIX/include/tracetools/"
+    - |
+      cat > "$PREFIX/include/tracetools/config.h" <<'EOF'
+      #ifndef TRACETOOLS__CONFIG_H_
+      #define TRACETOOLS__CONFIG_H_
+      #define TRACETOOLS_DISABLED
+      #endif
+      EOF
+    - |
+      cat > /tmp/tracetools_disabled.c <<'EOF'
+      #include <stdbool.h>
+      bool ros_trace_compile_status(void) {
+        return false;
+      }
+      EOF
+    - cc -std=c11 -fPIC -I"$PREFIX/include" -shared /tmp/tracetools_disabled.c -o "$PREFIX/lib/libtracetools.so"
+    - cc -std=c11 -fPIC -I"$PREFIX/include" -shared src/status.c -L"$PREFIX/lib" -ltracetools -Wl,-rpath,"$PREFIX/lib" -o "$PREFIX/lib/libtracetools_status.so"
+    - cc -std=c11 -I"$PREFIX/include" src/status_tool.c -L"$PREFIX/lib" -ltracetools -ltracetools_status -Wl,-rpath,"$PREFIX/lib" -o "$PREFIX/lib/tracetools/status"
+    - cp package.xml "$PREFIX/share/tracetools/package.xml"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/tracetools"
+    - |
+      cat > "$PREFIX/share/tracetools/cmake/tracetoolsConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/tracetoolsTargets.cmake")
+      set(tracetools_LIBRARIES tracetools::tracetools)
+      set(tracetools_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/tracetools/cmake/tracetoolsTargets.cmake" <<'EOF'
+      add_library(tracetools::tracetools SHARED IMPORTED)
+      set_target_properties(tracetools::tracetools PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libtracetools.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_COMPILE_DEFINITIONS "TRACETOOLS_DISABLED"
+      )
+      add_library(tracetools::tracetools_status SHARED IMPORTED)
+      set_target_properties(tracetools::tracetools_status PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libtracetools_status.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "tracetools::tracetools"
+      )
+      EOF
+
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#   run:
+#     - libgcc
+
+tests:
+  - script:
+      - test -f $PREFIX/include/tracetools/config.h
+      - test -f $PREFIX/lib/libtracetools.so
+      - test -f $PREFIX/lib/libtracetools_status.so
+      - test -x $PREFIX/lib/tracetools/status
+      - |
+        cat > test_tracetools.c <<'EOF'
+        #include <stdbool.h>
+        #include <tracetools/tracetools.h>
+        int main(void) {
+          TRACEPOINT(rcl_init, (const void *)0);
+          return ros_trace_compile_status() ? 1 : 0;
+        }
+        EOF
+      - cc -std=c11 -I$PREFIX/include test_tracetools.c -L$PREFIX/lib -ltracetools -Wl,-rpath,$PREFIX/lib -o test_tracetools
+      - ./test_tracetools
+
+about:
+  homepage: https://github.com/ros2/ros2_tracing
+  repository: https://github.com/ros2/ros2_tracing
+  summary: Tracing tools and instrumentation for ROS 2, packaged with tracing disabled
+  license: Apache-2.0
+  license_file: tracetools/LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -77,6 +77,10 @@ Current policy:
 
 ## P5: RMW / Communication Layer
 
+- [ ] `rosidl-typesupport-introspection-c`
+  - Shared prerequisite for CycloneDDS and FastDDS RMW implementations.
+- [ ] `rosidl-typesupport-introspection-cpp`
+  - Shared prerequisite for CycloneDDS and FastDDS RMW implementations.
 - [x] `rmw`
 - [x] `rmw-implementation-cmake`
   - Required CMake helper package for `rmw-implementation`.

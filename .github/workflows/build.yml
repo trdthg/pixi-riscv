@@ -82,6 +82,8 @@ jobs:
               'recipes/rmw': 510,
               'recipes/rmw-implementation': 520,
               'recipes/rmw-dds-common': 530,
+              'recipes/rosidl-typesupport-introspection-c': 540,
+              'recipes/rosidl-typesupport-introspection-cpp': 550,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

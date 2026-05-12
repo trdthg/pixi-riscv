@@ -1,0 +1,142 @@
+context:
+  name: "rosidl-typesupport-introspection-cpp"
+  ros_name: "rosidl_typesupport_introspection_cpp"
+  version: "3.1.8"
+  git_rev: "703d80c8b39cc8db5868a7805186c9ff23367bf5"
+  source_dir: "rosidl_typesupport_introspection_cpp"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/include" "$PREFIX/lib/${{ ros_name }}" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp" "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages"
+    - cp -R include/${{ ros_name }} "$PREFIX/include/"
+    - cp -R ${{ ros_name }} "$SITE_PACKAGES/"
+    - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
+    - cp -R resource "$PREFIX/share/${{ ros_name }}/"
+    - cp bin/${{ ros_name }} "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - chmod +x "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - |
+      c++ -std=c++17 -fPIC -DROSIDL_TYPESUPPORT_INTROSPECTION_CPP_BUILDING_DLL \
+        -Iinclude -I"$PREFIX/include" \
+        -shared src/identifier.cpp \
+        -L"$PREFIX/lib" -lrosidl_typesupport_introspection_c -Wl,-rpath,"$PREFIX/lib" \
+        -o "$PREFIX/lib/lib${{ ros_name }}.so"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - |
+      sed \
+        -e "s#@PYTHON_INSTALL_DIR@#${SITE_PACKAGES#$PREFIX/}#g" \
+        -e "s#@rosidl_typesupport_introspection_cpp_LIBRARY_TYPE@#SHARED#g" \
+        rosidl_typesupport_introspection_cpp-extras.cmake.in > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_introspection_cpp-extras.cmake"
+    - mkdir -p "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: rosidl-typesupport-introspection-cpp
+      Version: ${{ version }}
+      EOF
+    - |
+      cat > "$SITE_PACKAGES/${{ ros_name }}-${{ version }}.dist-info/entry_points.txt" <<'EOF'
+      [rosidl_cli.command.generate.typesupport_extensions]
+      introspection_cpp = rosidl_typesupport_introspection_cpp.cli:GenerateIntrospectionCppTypesupport
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp/${{ ros_name }}"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_introspection_cppConfig.cmake" <<'EOF'
+      find_package(ament_cmake_core REQUIRED)
+      find_package(rosidl_cmake REQUIRED)
+      find_package(rosidl_runtime_c REQUIRED)
+      find_package(rosidl_runtime_cpp REQUIRED)
+      find_package(rosidl_generator_cpp REQUIRED)
+      find_package(rosidl_typesupport_interface REQUIRED)
+      find_package(rosidl_typesupport_introspection_c REQUIRED)
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_typesupport_introspection_cppTargets.cmake")
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_typesupport_introspection_cpp-extras.cmake")
+      set(rosidl_typesupport_introspection_cpp_LIBRARIES rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp)
+      set(rosidl_typesupport_introspection_cpp_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_introspection_cppTargets.cmake" <<'EOF'
+      add_library(rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp SHARED IMPORTED)
+      set_target_properties(rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librosidl_typesupport_introspection_cpp.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+        INTERFACE_LINK_LIBRARIES "rosidl_typesupport_introspection_c::rosidl_typesupport_introspection_c;rosidl_runtime_c::rosidl_runtime_c;rosidl_runtime_cpp::rosidl_runtime_cpp"
+      )
+      EOF
+
+requirements:
+  host:
+    - ament-cmake-core
+    - ament-index-python
+    - rosidl-cmake
+    - rosidl-cli
+    - rosidl-generator-cpp
+    - rosidl-parser
+    - rosidl-runtime-c
+    - rosidl-runtime-cpp
+    - rosidl-typesupport-interface
+    - rosidl-typesupport-introspection-c
+  run:
+    - ament-cmake-core
+    - ament-index-python
+    - rosidl-cmake
+    - rosidl-cli
+    - rosidl-generator-cpp
+    - rosidl-parser
+    - rosidl-runtime-c
+    - rosidl-runtime-cpp
+    - rosidl-typesupport-interface
+    - rosidl-typesupport-introspection-c
+
+# future requirements:
+#   build:
+#     - cxx-compiler
+#   run:
+#     - libstdcxx
+#     - python
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librosidl_typesupport_introspection_cpp.so
+      - test -f $PREFIX/include/rosidl_typesupport_introspection_cpp/identifier.hpp
+      - test -f $PREFIX/include/rosidl_typesupport_introspection_cpp/message_introspection.hpp
+      - test -x $PREFIX/lib/rosidl_typesupport_introspection_cpp/rosidl_typesupport_introspection_cpp
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp/rosidl_typesupport_introspection_cpp
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/rosidl_typesupport_introspection_cpp
+      - |
+        cat > test_introspection_cpp.cpp <<'EOF'
+        #include <cstring>
+        #include <rosidl_typesupport_introspection_cpp/identifier.hpp>
+        int main() {
+          return std::strcmp(rosidl_typesupport_introspection_cpp::typesupport_identifier, "rosidl_typesupport_introspection_cpp");
+        }
+        EOF
+      - c++ -std=c++17 -I$PREFIX/include test_introspection_cpp.cpp -L$PREFIX/lib -lrosidl_typesupport_introspection_cpp -lrosidl_typesupport_introspection_c -Wl,-rpath,$PREFIX/lib -o test_introspection_cpp
+      - ./test_introspection_cpp
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: C++ introspection type support for ROS interfaces
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

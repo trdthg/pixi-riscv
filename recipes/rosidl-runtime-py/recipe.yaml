@@ -1,7 +1,7 @@
 context:
   name: "rosidl-runtime-py"
   version: "0.9.3"
-  git_rev: "3971c5f59606fa33097f0ad9c36b6438dbb0b523"
+  git_rev: "02b91d6f9acbfe3dbfa4feb34bd7c30e219aa178"
   source_dir: "."
 
 package:

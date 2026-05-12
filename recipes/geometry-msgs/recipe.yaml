@@ -26,16 +26,149 @@ build:
     - mkdir -p /tmp/${{ ros_name }}_idl
     - |
       python3 - <<'PY'
-      import json
       from pathlib import Path
+
+      primitive_map = {
+          'bool': 'boolean',
+          'byte': 'octet',
+          'char': 'uint8',
+          'float32': 'float',
+          'float64': 'double',
+          'int8': 'int8',
+          'uint8': 'uint8',
+          'int16': 'int16',
+          'uint16': 'uint16',
+          'int32': 'int32',
+          'uint32': 'uint32',
+          'int64': 'int64',
+          'uint64': 'uint64',
+          'string': 'string',
+      }
+
+      def split_comment(line):
+          return line.split('#', 1)[0].strip()
+
+      def idl_type(type_name):
+          suffix = ''
+          if type_name.endswith('[]'):
+              type_name = type_name[:-2]
+              suffix = '[]'
+          elif '[' in type_name and type_name.endswith(']'):
+              base, bound = type_name[:-1].split('[', 1)
+              type_name = base
+              suffix = f'[{bound}]'
+          if '/' in type_name:
+              pkg, name = type_name.split('/', 1)
+              value = f'{pkg}::msg::{name}'
+          else:
+              value = primitive_map.get(type_name, f'${{ ros_name }}::msg::{type_name}')
+          if suffix == '[]':
+              return f'sequence<{value}>'
+          if suffix.startswith('['):
+              return f'{value}{suffix}'
+          return value
+
+      def include_for(type_name):
+          while type_name.endswith('[]') or ('[' in type_name and type_name.endswith(']')):
+              if type_name.endswith('[]'):
+                  type_name = type_name[:-2]
+              else:
+                  type_name = type_name[:type_name.rfind('[')]
+          if '/' in type_name:
+              pkg, name = type_name.split('/', 1)
+              return f'#include "{pkg}/msg/{name}.idl"'
+          if type_name not in primitive_map and type_name[:1].isupper():
+              return f'#include "${{ ros_name }}/msg/{type_name}.idl"'
+          return None
+
+      def parse_fields(lines):
+          includes, constants, fields = set(), [], []
+          for raw in lines:
+              line = split_comment(raw)
+              if not line:
+                  continue
+              parts = line.split()
+              if len(parts) < 2:
+                  continue
+              type_name, name = parts[0], parts[1]
+              inc = include_for(type_name)
+              if inc:
+                  includes.add(inc)
+              if '=' in name:
+                  name, value = name.split('=', 1)
+                  constants.append((idl_type(type_name), name, value))
+              elif len(parts) >= 3 and parts[2] == '=':
+                  constants.append((idl_type(type_name), name, parts[3]))
+              else:
+                  fields.append((idl_type(type_name), name))
+          return sorted(includes), constants, fields
+
+      def render_msg(rel, lines):
+          name = Path(rel).stem
+          includes, constants, fields = parse_fields(lines)
+          body = []
+          body.extend(includes)
+          if includes:
+              body.append('')
+          body.extend([
+              f'module ${{ ros_name }} {{',
+              '  module msg {',
+          ])
+          if constants:
+              body.append(f'    module {name}_Constants {{')
+              for typ, const_name, value in constants:
+                  body.append(f'      const {typ} {const_name} = {value};')
+              body.append('    };')
+          body.append(f'    struct {name} {{')
+          for typ, field_name in fields:
+              body.append(f'      {typ} {field_name};')
+          body.extend(['    };', '  };', '};', ''])
+          return '\n'.join(body)
+
+      def split_srv(text):
+          before, sep, after = text.partition('---')
+          return before.splitlines(), after.splitlines() if sep else []
+
+      def render_srv(rel, text):
+          name = Path(rel).stem
+          request_lines, response_lines = split_srv(text)
+          req_includes, req_constants, req_fields = parse_fields(request_lines)
+          res_includes, res_constants, res_fields = parse_fields(response_lines)
+          body = []
+          includes = sorted(set(req_includes) | set(res_includes))
+          body.extend(includes)
+          if includes:
+              body.append('')
+          body.extend([f'module ${{ ros_name }} {{', '  module srv {'])
+          body.append(f'    struct {name}_Request {{')
+          for typ, field_name in req_fields:
+              body.append(f'      {typ} {field_name};')
+          body.append('    };')
+          if res_constants:
+              body.append(f'    module {name}_Response_Constants {{')
+              for typ, const_name, value in res_constants:
+                  body.append(f'      const {typ} {const_name} = {value};')
+              body.append('    };')
+          body.append(f'    struct {name}_Response {{')
+          for typ, field_name in res_fields:
+              body.append(f'      {typ} {field_name};')
+          body.extend(['    };', '  };', '};', ''])
+          return '\n'.join(body)
+
       files = "${{ interface_files }}".split()
-      base = Path.cwd()
-      Path('/tmp/${{ ros_name }}_adapter_args.json').write_text(json.dumps({
-          'package_name': '${{ ros_name }}',
-          'non_idl_tuples': [f'{base}:{f}' for f in files],
-      }))
+      out_base = Path('/tmp/${{ ros_name }}_idl')
+      tuples = []
+      for rel in files:
+          src = Path(rel)
+          out = out_base / src.with_suffix('.idl')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          if src.suffix == '.srv':
+              out.write_text(render_srv(rel, src.read_text()))
+          else:
+              out.write_text(render_msg(rel, src.read_text().splitlines()))
+          tuples.append(f'{out_base}:{out.relative_to(out_base)}')
+      Path('/tmp/${{ ros_name }}_idl_tuples.txt').write_text('\n'.join(tuples) + '\n')
       PY
-    - PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}" python3 -m rosidl_adapter --package-name ${{ ros_name }} --arguments-file /tmp/${{ ros_name }}_adapter_args.json --output-dir /tmp/${{ ros_name }}_idl --output-file /tmp/${{ ros_name }}_idl_tuples.txt
     - |
       for path in ${{ interface_files }}; do
         mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$path")"
@@ -70,10 +203,8 @@ build:
 
 requirements:
   host:
-    - rosidl-adapter
     - std-msgs
   run:
-    - rosidl-adapter
     - std-msgs
 
 # future requirements:

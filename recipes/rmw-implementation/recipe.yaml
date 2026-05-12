@@ -19,10 +19,18 @@ build:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rmw_typesupport" "$PREFIX/share/ament_index/resource_index/rmw_typesupport_c" "$PREFIX/share/ament_index/resource_index/rmw_typesupport_cpp"
     - |
+      cat > /tmp/rmw_implementation_dynamic_typesupport_forward.hpp <<'EOF'
+      typedef struct rosidl_dynamic_typesupport_dynamic_data_s
+        rosidl_dynamic_typesupport_dynamic_data_t;
+      typedef struct rosidl_dynamic_typesupport_serialization_support_s
+        rosidl_dynamic_typesupport_serialization_support_t;
+      EOF
+    - |
       c++ -std=c++17 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden \
         -DRMW_IMPLEMENTATION_BUILDING_DLL \
         -DRMW_IMPLEMENTATION_DEFAULT_VISIBILITY=RMW_IMPLEMENTATION_PUBLIC \
         -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+        -include /tmp/rmw_implementation_dynamic_typesupport_forward.hpp \
         -I"$PREFIX/include" -Isrc \
         -shared src/functions.cpp \
         -L"$PREFIX/lib" -lrmw -lament_index_cpp -lrcpputils -lrcutils -ldl -Wl,-rpath,"$PREFIX/lib" \

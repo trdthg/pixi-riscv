@@ -1,0 +1,92 @@
+context:
+  name: "rosidl-generator-cpp"
+  version: "3.1.8"
+  git_rev: "8cdfe315157f8bffa9b73b6750c52f44325a7847"
+  source_dir: "rosidl_generator_cpp"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rosidl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_generator_cpp" "$PREFIX/share/rosidl_generator_cpp/cmake" "$PREFIX/share/rosidl_generator_cpp/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages"
+    - cp -R rosidl_generator_cpp "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/rosidl_generator_cpp/package.xml"
+    - cp bin/rosidl_generator_cpp "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp"
+    - chmod +x "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp"
+    - cp -R cmake "$PREFIX/share/rosidl_generator_cpp/"
+    - cp -R resource "$PREFIX/share/rosidl_generator_cpp/"
+    - |
+      sed \
+        -e "s#@PYTHON_INSTALL_DIR@#${SITE_PACKAGES#$PREFIX/}#g" \
+        rosidl_generator_cpp-extras.cmake.in > "$PREFIX/share/rosidl_generator_cpp/cmake/rosidl_generator_cpp-extras.cmake"
+    - cp rosidl_generator_cpp/__init__.py "$SITE_PACKAGES/rosidl_generator_cpp/__init__.py"
+    - cp rosidl_generator_cpp/cli.py "$SITE_PACKAGES/rosidl_generator_cpp/cli.py"
+    - mkdir -p "$SITE_PACKAGES/rosidl_generator_cpp-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/rosidl_generator_cpp-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: rosidl-generator-cpp
+      Version: ${{ version }}
+      EOF
+    - |
+      cat > "$SITE_PACKAGES/rosidl_generator_cpp-${{ version }}.dist-info/entry_points.txt" <<'EOF'
+      [rosidl_cli.command.generate.type_extensions]
+      cpp = rosidl_generator_cpp.cli:GenerateCpp
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_generator_cpp"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages/rosidl_generator_cpp"
+    - |
+      cat > "$PREFIX/share/rosidl_generator_cpp/cmake/rosidl_generator_cppConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_generator_cpp-extras.cmake")
+      EOF
+
+requirements:
+  host:
+    - ament-index-python
+    - rosidl-cli
+    - rosidl-cmake
+    - rosidl-generator-c
+    - rosidl-parser
+    - rosidl-runtime-c
+    - rosidl-runtime-cpp
+  run:
+    - ament-index-python
+    - rosidl-cli
+    - rosidl-cmake
+    - rosidl-generator-c
+    - rosidl-parser
+    - rosidl-runtime-c
+    - rosidl-runtime-cpp
+
+tests:
+  - script:
+      - test -f $PREFIX/share/rosidl_generator_cpp/package.xml
+      - test -x $PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp
+      - test -f $PREFIX/share/rosidl_generator_cpp/cmake/rosidl_generator_cppConfig.cmake
+
+# future requirements:
+#   run:
+#     - python
+
+about:
+  homepage: https://github.com/ros2/rosidl
+  repository: https://github.com/ros2/rosidl
+  summary: Generate ROS interfaces in C++
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

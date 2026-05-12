@@ -90,7 +90,7 @@ about:
   repository: https://github.com/ros2/ros2_tracing
   summary: Tracing tools and instrumentation for ROS 2, packaged with tracing disabled
   license: Apache-2.0
-  license_file: tracetools/LICENSE
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:

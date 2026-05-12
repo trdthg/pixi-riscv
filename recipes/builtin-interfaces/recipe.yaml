@@ -1,0 +1,97 @@
+context:
+  name: "builtin-interfaces"
+  ros_name: "builtin_interfaces"
+  version: "1.2.2"
+  git_rev: "8311af7fa573ee4ffd2504011a605cf321a1501b"
+  source_dir: "builtin_interfaces"
+  interface_files: "msg/Duration.msg msg/Time.msg"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcl_interfaces.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_interfaces"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - mkdir -p /tmp/${{ ros_name }}_idl /tmp/${{ ros_name }}_py/${{ ros_name }}
+    - |
+      python3 - <<'PY'
+      import json
+      from pathlib import Path
+      files = "${{ interface_files }}".split()
+      base = Path.cwd()
+      Path('/tmp/${{ ros_name }}_adapter_args.json').write_text(json.dumps({
+          'package_name': '${{ ros_name }}',
+          'non_idl_tuples': [f'{base}:{f}' for f in files],
+      }))
+      PY
+    - PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}" python3 -m rosidl_adapter --package-name ${{ ros_name }} --arguments-file /tmp/${{ ros_name }}_adapter_args.json --output-dir /tmp/${{ ros_name }}_idl --output-file /tmp/${{ ros_name }}_idl_tuples.txt
+    - cp -R msg "$PREFIX/share/${{ ros_name }}/"
+    - cp -R /tmp/${{ ros_name }}_idl/msg "$PREFIX/share/${{ ros_name }}/"
+    - |
+      cp /tmp/${{ ros_name }}_idl_tuples.txt /tmp/${{ ros_name }}_idl_tuples_rel.txt
+      sed -i 's#^.*/tmp/${{ ros_name }}_idl:##' /tmp/${{ ros_name }}_idl_tuples_rel.txt
+      { cat /tmp/${{ ros_name }}_idl_tuples_rel.txt; printf '%s\n' ${{ interface_files }}; } | sort > "$PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}"
+    - |
+      IDL_FILES=$(paste -sd ';' /tmp/${{ ros_name }}_idl_tuples_rel.txt)
+      INTERFACE_FILES=$(printf '%s\n' ${{ interface_files }} | paste -sd ';')
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_cmake-extras.cmake" <<EOF
+      set(${{ ros_name }}_IDL_FILES "${IDL_FILES}")
+      set(${{ ros_name }}_INTERFACE_FILES "${INTERFACE_FILES}")
+      set(${{ ros_name }}_RECURSIVE_DEPENDENCIES "")
+      set(${{ ros_name }}_TARGETS "")
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake" <<'EOF'
+      set(builtin_interfaces_FOUND_AMENT_PACKAGE TRUE)
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+
+requirements:
+  host:
+    - rosidl-adapter
+  run:
+    - rosidl-adapter
+
+tests:
+  - script:
+      - test -f $PREFIX/share/builtin_interfaces/msg/Time.msg
+      - test -f $PREFIX/share/builtin_interfaces/msg/Time.idl
+      - grep -q 'msg/Time.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/builtin_interfaces
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(test_builtin_interfaces)
+        find_package(builtin_interfaces REQUIRED)
+        if(NOT "msg/Time.idl" IN_LIST builtin_interfaces_IDL_FILES)
+          message(FATAL_ERROR "missing Time.idl")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+# future requirements:
+#   run:
+#     - python
+#     - rosidl-generator-py
+
+about:
+  homepage: https://github.com/ros2/rcl_interfaces
+  repository: https://github.com/ros2/rcl_interfaces
+  summary: Primitive time and duration interfaces for ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

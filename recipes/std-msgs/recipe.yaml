@@ -1,0 +1,113 @@
+context:
+  name: "std-msgs"
+  ros_name: "std_msgs"
+  version: "4.9.1"
+  git_rev: "c3072dba174f18d41b64fcbbb20bed47a86e9898"
+  source_dir: "std_msgs"
+  interface_files: "msg/Bool.msg msg/Byte.msg msg/ByteMultiArray.msg msg/Char.msg msg/ColorRGBA.msg msg/Empty.msg msg/Float32.msg msg/Float32MultiArray.msg msg/Float64.msg msg/Float64MultiArray.msg msg/Header.msg msg/Int16.msg msg/Int16MultiArray.msg msg/Int32.msg msg/Int32MultiArray.msg msg/Int64.msg msg/Int64MultiArray.msg msg/Int8.msg msg/Int8MultiArray.msg msg/MultiArrayDimension.msg msg/MultiArrayLayout.msg msg/String.msg msg/UInt16.msg msg/UInt16MultiArray.msg msg/UInt32.msg msg/UInt32MultiArray.msg msg/UInt64.msg msg/UInt64MultiArray.msg msg/UInt8.msg msg/UInt8MultiArray.msg"
+  recursive_dependencies: "builtin_interfaces"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/common_interfaces.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_interfaces"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - mkdir -p /tmp/${{ ros_name }}_idl
+    - |
+      python3 - <<'PY'
+      import json
+      from pathlib import Path
+      files = "${{ interface_files }}".split()
+      base = Path.cwd()
+      Path('/tmp/${{ ros_name }}_adapter_args.json').write_text(json.dumps({
+          'package_name': '${{ ros_name }}',
+          'non_idl_tuples': [f'{base}:{f}' for f in files],
+      }))
+      PY
+    - PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}" python3 -m rosidl_adapter --package-name ${{ ros_name }} --arguments-file /tmp/${{ ros_name }}_adapter_args.json --output-dir /tmp/${{ ros_name }}_idl --output-file /tmp/${{ ros_name }}_idl_tuples.txt
+    - |
+      for path in ${{ interface_files }}; do
+        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$path")"
+        cp "$path" "$PREFIX/share/${{ ros_name }}/$path"
+      done
+    - |
+      while IFS= read -r tuple; do
+        rel="${tuple#*:}"
+        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$rel")"
+        cp "/tmp/${{ ros_name }}_idl/$rel" "$PREFIX/share/${{ ros_name }}/$rel"
+      done < /tmp/${{ ros_name }}_idl_tuples.txt
+    - |
+      cp /tmp/${{ ros_name }}_idl_tuples.txt /tmp/${{ ros_name }}_idl_tuples_rel.txt
+      sed -i 's#^.*/tmp/${{ ros_name }}_idl:##' /tmp/${{ ros_name }}_idl_tuples_rel.txt
+      { cat /tmp/${{ ros_name }}_idl_tuples_rel.txt; printf '%s\n' ${{ interface_files }}; } | sort > "$PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}"
+    - |
+      IDL_FILES=$(paste -sd ';' /tmp/${{ ros_name }}_idl_tuples_rel.txt)
+      INTERFACE_FILES=$(printf '%s\n' ${{ interface_files }} | paste -sd ';')
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_cmake-extras.cmake" <<EOF
+      set(${{ ros_name }}_IDL_FILES "${IDL_FILES}")
+      set(${{ ros_name }}_INTERFACE_FILES "${INTERFACE_FILES}")
+      set(${{ ros_name }}_RECURSIVE_DEPENDENCIES "${{ recursive_dependencies }}")
+      set(${{ ros_name }}_TARGETS "")
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake" <<EOF
+      set(${{ ros_name }}_FOUND_AMENT_PACKAGE TRUE)
+      include("\${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+
+requirements:
+  host:
+    - rosidl-adapter
+    - builtin-interfaces
+  run:
+    - rosidl-adapter
+    - builtin-interfaces
+
+# future requirements:
+#   run:
+#     - python
+#     - rosidl-generator-py
+
+tests:
+  - script:
+      - test -f $PREFIX/share/${{ ros_name }}/package.xml
+      - test -f $PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake
+      - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Bool.msg
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Bool.idl
+      - grep -q 'msg/Bool.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(test_${{ ros_name }})
+        find_package(${{ ros_name }} REQUIRED)
+        if(NOT "msg/Bool.idl" IN_LIST ${{ ros_name }}_IDL_FILES)
+          message(FATAL_ERROR "missing msg/Bool.idl")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/common_interfaces
+  repository: https://github.com/ros2/common_interfaces
+  summary: Standard primitive and array messages for ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

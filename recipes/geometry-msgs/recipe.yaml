@@ -1,0 +1,113 @@
+context:
+  name: "geometry-msgs"
+  ros_name: "geometry_msgs"
+  version: "4.9.1"
+  git_rev: "c3072dba174f18d41b64fcbbb20bed47a86e9898"
+  source_dir: "geometry_msgs"
+  interface_files: "msg/Accel.msg msg/AccelStamped.msg msg/AccelWithCovariance.msg msg/AccelWithCovarianceStamped.msg msg/Inertia.msg msg/InertiaStamped.msg msg/Point.msg msg/Point32.msg msg/PointStamped.msg msg/Polygon.msg msg/PolygonInstance.msg msg/PolygonInstanceStamped.msg msg/PolygonStamped.msg msg/Pose.msg msg/Pose2D.msg msg/PoseArray.msg msg/PoseStamped.msg msg/PoseWithCovariance.msg msg/PoseWithCovarianceStamped.msg msg/Quaternion.msg msg/QuaternionStamped.msg msg/Transform.msg msg/TransformStamped.msg msg/Twist.msg msg/TwistStamped.msg msg/TwistWithCovariance.msg msg/TwistWithCovarianceStamped.msg msg/Vector3.msg msg/Vector3Stamped.msg msg/VelocityStamped.msg msg/Wrench.msg msg/WrenchStamped.msg"
+  recursive_dependencies: "std_msgs"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/common_interfaces.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_interfaces"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - mkdir -p /tmp/${{ ros_name }}_idl
+    - |
+      python3 - <<'PY'
+      import json
+      from pathlib import Path
+      files = "${{ interface_files }}".split()
+      base = Path.cwd()
+      Path('/tmp/${{ ros_name }}_adapter_args.json').write_text(json.dumps({
+          'package_name': '${{ ros_name }}',
+          'non_idl_tuples': [f'{base}:{f}' for f in files],
+      }))
+      PY
+    - PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}" python3 -m rosidl_adapter --package-name ${{ ros_name }} --arguments-file /tmp/${{ ros_name }}_adapter_args.json --output-dir /tmp/${{ ros_name }}_idl --output-file /tmp/${{ ros_name }}_idl_tuples.txt
+    - |
+      for path in ${{ interface_files }}; do
+        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$path")"
+        cp "$path" "$PREFIX/share/${{ ros_name }}/$path"
+      done
+    - |
+      while IFS= read -r tuple; do
+        rel="${tuple#*:}"
+        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$rel")"
+        cp "/tmp/${{ ros_name }}_idl/$rel" "$PREFIX/share/${{ ros_name }}/$rel"
+      done < /tmp/${{ ros_name }}_idl_tuples.txt
+    - |
+      cp /tmp/${{ ros_name }}_idl_tuples.txt /tmp/${{ ros_name }}_idl_tuples_rel.txt
+      sed -i 's#^.*/tmp/${{ ros_name }}_idl:##' /tmp/${{ ros_name }}_idl_tuples_rel.txt
+      { cat /tmp/${{ ros_name }}_idl_tuples_rel.txt; printf '%s\n' ${{ interface_files }}; } | sort > "$PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}"
+    - |
+      IDL_FILES=$(paste -sd ';' /tmp/${{ ros_name }}_idl_tuples_rel.txt)
+      INTERFACE_FILES=$(printf '%s\n' ${{ interface_files }} | paste -sd ';')
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_cmake-extras.cmake" <<EOF
+      set(${{ ros_name }}_IDL_FILES "${IDL_FILES}")
+      set(${{ ros_name }}_INTERFACE_FILES "${INTERFACE_FILES}")
+      set(${{ ros_name }}_RECURSIVE_DEPENDENCIES "${{ recursive_dependencies }}")
+      set(${{ ros_name }}_TARGETS "")
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake" <<EOF
+      set(${{ ros_name }}_FOUND_AMENT_PACKAGE TRUE)
+      include("\${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+
+requirements:
+  host:
+    - rosidl-adapter
+    - std-msgs
+  run:
+    - rosidl-adapter
+    - std-msgs
+
+# future requirements:
+#   run:
+#     - python
+#     - rosidl-generator-py
+
+tests:
+  - script:
+      - test -f $PREFIX/share/${{ ros_name }}/package.xml
+      - test -f $PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake
+      - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Accel.msg
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Accel.idl
+      - grep -q 'msg/Accel.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(test_${{ ros_name }})
+        find_package(${{ ros_name }} REQUIRED)
+        if(NOT "msg/Accel.idl" IN_LIST ${{ ros_name }}_IDL_FILES)
+          message(FATAL_ERROR "missing msg/Accel.idl")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/common_interfaces
+  repository: https://github.com/ros2/common_interfaces
+  summary: Geometry messages for ROS 2, including Twist
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

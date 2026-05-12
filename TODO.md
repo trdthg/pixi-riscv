@@ -97,9 +97,9 @@ Current policy:
   - FastDDS serialization dependency.
 - [x] `foonathan-memory`
   - FastDDS allocator dependency providing CMake package `foonathan_memory`.
-- [ ] `asio`
+- [x] `asio`
   - Header-only standalone Asio dependency for FastDDS.
-- [ ] `tinyxml2`
+- [x] `tinyxml2`
   - XML parser dependency for FastDDS.
 - [ ] `fastrtps`
   - FastDDS transport library dependency.

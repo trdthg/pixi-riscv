@@ -70,6 +70,20 @@ jobs:
             exit 0
           fi
 
+          python3 - <<'PY'
+          from pathlib import Path
+          order = {
+              'recipes/builtin-interfaces': 400,
+              'recipes/unique-identifier-msgs': 410,
+              'recipes/std-msgs': 420,
+              'recipes/geometry-msgs': 430,
+              'recipes/action-msgs': 440,
+          }
+          recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
+          recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))
+          Path('/tmp/recipes-to-build').write_text(''.join(f'{item}\n' for item in recipes))
+          PY
+
           echo "Selected recipes:"
           cat /tmp/recipes-to-build
           echo "has_recipes=true" >> "$GITHUB_OUTPUT"

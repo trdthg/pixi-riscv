@@ -1,0 +1,73 @@
+context:
+  name: "ament-index-cpp"
+  version: "1.4.1"
+  git_rev: "ae673e815cae9413cfbf4cab6e91a9c1c73c84ef"
+  source_dir: "ament_index_cpp"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ament/ament_index.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/include/ament_index_cpp" "$PREFIX/lib" "$PREFIX/share/ament_index_cpp/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - |
+      c++ -std=c++14 -fPIC -DAMENT_INDEX_CPP_BUILDING_DLL -Iinclude \
+        -shared src/*.cpp -o "$PREFIX/lib/libament_index_cpp.so"
+    - cp -R include/ament_index_cpp "$PREFIX/include/"
+    - cp package.xml "$PREFIX/share/ament_index_cpp/package.xml"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/ament_index_cpp"
+    - |
+      cat > "$PREFIX/share/ament_index_cpp/cmake/ament_index_cppConfig.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/ament_index_cppTargets.cmake")
+      EOF
+    - |
+      cat > "$PREFIX/share/ament_index_cpp/cmake/ament_index_cppTargets.cmake" <<'EOF'
+      add_library(ament_index_cpp::ament_index_cpp SHARED IMPORTED)
+      set_target_properties(ament_index_cpp::ament_index_cpp PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libament_index_cpp.so"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+      )
+      EOF
+
+# requirements:
+#   build:
+#     - cxx-compiler
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libament_index_cpp.so
+      - test -f $PREFIX/include/ament_index_cpp/get_package_prefix.hpp
+      - test -f $PREFIX/share/ament_index_cpp/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/ament_index_cpp
+      - |
+        cat > test_ament_index_cpp.cpp <<'EOF'
+        #include <ament_index_cpp/get_package_prefix.hpp>
+        #include <iostream>
+        int main() {
+          std::cout << ament_index_cpp::get_package_prefix("ament_index_cpp") << std::endl;
+          return 0;
+        }
+        EOF
+      - c++ -std=c++14 -I$PREFIX/include test_ament_index_cpp.cpp -L$PREFIX/lib -lament_index_cpp -Wl,-rpath,$PREFIX/lib -o test_ament_index_cpp
+      - AMENT_PREFIX_PATH=$PREFIX ./test_ament_index_cpp
+
+about:
+  homepage: https://github.com/ament/ament_index
+  repository: https://github.com/ament/ament_index
+  summary: C++ API to access the ament resource index
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -21,23 +21,24 @@ Current policy:
 
 ## P1: ament / colcon Foundation
 
-- [ ] `ament-index-python`
-  - Suggested next package. Pure Python and useful early.
+- [x] `ament-index-python`
 - [ ] `ament-index-cpp`
-- [ ] `ament-cmake-core`
-- [ ] `ament-cmake`
-- [ ] `ament-cmake-python`
+- [ ] `ament-cmake-gen-version-h`
+  - Required by `ament-index-cpp`.
+- [x] `ament-cmake-core`
+- [x] `ament-cmake`
+- [x] `ament-cmake-python`
 - [ ] `ament-cmake-ros`
-- [ ] `ament-cmake-target-dependencies`
-- [ ] `ament-cmake-include-directories`
-- [ ] `ament-cmake-libraries`
-- [ ] `ament-cmake-export-definitions`
-- [ ] `ament-cmake-export-dependencies`
-- [ ] `ament-cmake-export-include-directories`
-- [ ] `ament-cmake-export-interfaces`
-- [ ] `ament-cmake-export-libraries`
-- [ ] `ament-cmake-export-link-flags`
-- [ ] `ament-cmake-export-targets`
+- [x] `ament-cmake-target-dependencies`
+- [x] `ament-cmake-include-directories`
+- [x] `ament-cmake-libraries`
+- [x] `ament-cmake-export-definitions`
+- [x] `ament-cmake-export-dependencies`
+- [x] `ament-cmake-export-include-directories`
+- [x] `ament-cmake-export-interfaces`
+- [x] `ament-cmake-export-libraries`
+- [x] `ament-cmake-export-link-flags`
+- [x] `ament-cmake-export-targets`
 
 ## P2: rosidl / Interface Generation
 
@@ -98,6 +99,6 @@ Current policy:
 
 ## Notes
 
-- `mimick`, `pybind11`, and `ament-package` have already been uploaded to the `riscv` channel.
+- `mimick`, `pybind11`, `ament-package`, `ament-index-python`, and the core `ament-cmake-*` module packages have already been uploaded to the `riscv` channel.
 - If a package is pure Python but needs host `python3`, avoid `noarch: python` for now; the current channel does not provide a conda Python package for the test environment.
 - When a package already exists on the channel with the same version and build number, bump `build.number` before re-uploading.

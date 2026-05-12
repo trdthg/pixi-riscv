@@ -1,0 +1,41 @@
+context:
+  name: "pybind11"
+  version: "2.13.6"
+  git_rev: "a2e59f0e7065404b44dfe92a28aca47ba1378dc4"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/pybind/pybind11.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DPYBIND11_TEST=OFF
+    - cmake --install build
+
+# requirements:
+#   build:
+#     - cmake
+
+tests:
+  - script:
+      - test -f $PREFIX/include/pybind11/pybind11.h
+      - test -f $PREFIX/include/pybind11/detail/common.h
+      - test -f $PREFIX/share/cmake/pybind11/pybind11Config.cmake
+      - test -f $PREFIX/share/cmake/pybind11/pybind11Targets.cmake
+
+about:
+  homepage: https://github.com/pybind/pybind11
+  repository: https://github.com/pybind/pybind11
+  summary: Seamless operability between C++11 and Python
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

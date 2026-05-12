@@ -1,0 +1,77 @@
+context:
+  name: "asio"
+  version: "1.18.2"
+  git_rev: "a4d820dd69b37fb8daee275d20eb162054453414"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/chriskohlhoff/asio.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/include" "$PREFIX/lib/cmake/Asio" "$PREFIX/share/asio"
+    - cp -R asio/include/asio "$PREFIX/include/"
+    - cp asio/include/asio.hpp "$PREFIX/include/asio.hpp"
+    - cp asio/LICENSE_1_0.txt "$PREFIX/share/asio/LICENSE_1_0.txt"
+    - |
+      cat > "$PREFIX/lib/cmake/Asio/AsioConfig.cmake" <<'EOF'
+      set(Asio_FOUND TRUE)
+      set(Asio_VERSION "1.18.2")
+      set(Asio_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../include")
+      set(Asio_INCLUDE_DIRS "${Asio_INCLUDE_DIR}")
+      if(NOT TARGET Asio::asio)
+        add_library(Asio::asio INTERFACE IMPORTED)
+        set_target_properties(Asio::asio PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${Asio_INCLUDE_DIR}"
+          INTERFACE_COMPILE_DEFINITIONS "ASIO_STANDALONE"
+        )
+      endif()
+      EOF
+    - |
+      cat > "$PREFIX/lib/cmake/Asio/AsioConfigVersion.cmake" <<'EOF'
+      set(PACKAGE_VERSION "1.18.2")
+      if(PACKAGE_FIND_VERSION VERSION_EQUAL PACKAGE_VERSION OR PACKAGE_FIND_VERSION VERSION_LESS PACKAGE_VERSION)
+        set(PACKAGE_VERSION_COMPATIBLE TRUE)
+        if(PACKAGE_FIND_VERSION VERSION_EQUAL PACKAGE_VERSION)
+          set(PACKAGE_VERSION_EXACT TRUE)
+        endif()
+      endif()
+      EOF
+
+# future requirements:
+#   run:
+#     - python
+
+tests:
+  - script:
+      - test -f $PREFIX/include/asio.hpp
+      - test -f $PREFIX/include/asio/version.hpp
+      - test -f $PREFIX/lib/cmake/Asio/AsioConfig.cmake
+      - |
+        cat > test_asio.cpp <<'EOF'
+        #define ASIO_STANDALONE
+        #include <asio.hpp>
+        #include <asio/version.hpp>
+        int main() {
+          asio::io_context io;
+          return ASIO_VERSION >= 101008 ? 0 : 1;
+        }
+        EOF
+      - c++ -std=c++11 -I$PREFIX/include test_asio.cpp -pthread -o test_asio
+      - ./test_asio
+
+about:
+  homepage: https://think-async.com/Asio/
+  repository: https://github.com/chriskohlhoff/asio
+  summary: Standalone C++ library for network and low-level I/O programming
+  license: BSL-1.0
+  license_file: asio/LICENSE_1_0.txt
+
+extra:
+  recipe-maintainers:
+    - trdthg

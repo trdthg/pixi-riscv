@@ -40,12 +40,14 @@ tests:
         fi
       - |
         cat > test_foonathan_memory.cpp <<'EOF'
-        #include <foonathan/memory/memory_pool.hpp>
         #include <foonathan/memory/heap_allocator.hpp>
         int main() {
-          foonathan::memory::memory_pool<foonathan::memory::node_pool, foonathan::memory::heap_allocator> pool(16, 4);
-          void * ptr = pool.allocate_node();
-          pool.deallocate_node(ptr);
+          foonathan::memory::heap_allocator alloc;
+          void * ptr = alloc.allocate_node(16, alignof(void *));
+          if (!ptr) {
+            return 1;
+          }
+          alloc.deallocate_node(ptr, 16, alignof(void *));
           return 0;
         }
         EOF

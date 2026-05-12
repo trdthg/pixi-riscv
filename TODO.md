@@ -59,12 +59,12 @@ Current policy:
 
 - [x] `rcutils`
   - Built early because `rosidl-runtime-c` requires it.
-- [ ] `rcpputils`
-- [ ] `tracetools`
+- [x] `rcpputils`
+- [x] `tracetools`
   - Prefer disabled or minimized tracing while bootstrapping.
-- [ ] `libyaml-vendor` or system `yaml`
-- [ ] `rosidl-typesupport-c`
-- [ ] `rosidl-typesupport-cpp`
+- [x] `libyaml-vendor` or system `yaml`
+- [x] `rosidl-typesupport-c`
+- [x] `rosidl-typesupport-cpp`
 
 ## P4: Message Packages
 

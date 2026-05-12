@@ -81,7 +81,10 @@ jobs:
           rm -rf output
           while IFS= read -r recipe_dir; do
             rattler-build build --recipe-dir "$recipe_dir" \
-              --target-platform=${{ matrix.target }}
+              --target-platform=${{ matrix.target }} \
+              --channel="file://${PWD}/output" \
+              --channel="https://prefix.dev/riscv" \
+              --channel=conda-forge
           done < /tmp/recipes-to-build
 
       - name: Upload all packages

@@ -42,22 +42,23 @@ Current policy:
 
 ## P2: rosidl / Interface Generation
 
-- [ ] `rosidl-cli`
+- [x] `rosidl-cli`
   - Required by `rosidl-adapter` and generator CLI entry points.
-- [ ] `rosidl-adapter`
-- [ ] `rosidl-parser`
-- [ ] `rosidl-cmake`
-- [ ] `rosidl-runtime-c`
-- [ ] `rosidl-runtime-cpp`
-- [ ] `rosidl-runtime-py`
-- [ ] `rosidl-generator-c`
-- [ ] `rosidl-generator-cpp`
-- [ ] `rosidl-generator-py`
-- [ ] `rosidl-typesupport-interface`
+- [x] `rosidl-adapter`
+- [x] `rosidl-parser`
+- [x] `rosidl-cmake`
+- [x] `rosidl-runtime-c`
+- [x] `rosidl-runtime-cpp`
+- [x] `rosidl-runtime-py`
+- [x] `rosidl-generator-c`
+- [x] `rosidl-generator-cpp`
+- [x] `rosidl-generator-py`
+- [x] `rosidl-typesupport-interface`
 
 ## P3: Low-Level Runtime
 
-- [ ] `rcutils`
+- [x] `rcutils`
+  - Built early because `rosidl-runtime-c` requires it.
 - [ ] `rcpputils`
 - [ ] `tracetools`
   - Prefer disabled or minimized tracing while bootstrapping.

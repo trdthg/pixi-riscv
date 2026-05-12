@@ -41,13 +41,27 @@ build:
           } \
         } while (0)
       #define RCUTILS_LOG_CONDITION_EMPTY
+      #define RCUTILS_LOG_CONDITION_ONCE_BEFORE \
+        { \
+          static int __rcutils_logging_once = 0; \
+          if (0 == __rcutils_logging_once) { \
+            __rcutils_logging_once = 1;
+      #define RCUTILS_LOG_CONDITION_ONCE_AFTER } \
+      }
+      #define RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression) \
+        if (expression) {
+      #define RCUTILS_LOG_CONDITION_EXPRESSION_AFTER }
       #define RCUTILS_LOG_NAMED(severity, name, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EMPTY, RCUTILS_LOG_CONDITION_EMPTY, name, __VA_ARGS__)
       #define RCUTILS_LOG(severity, ...) RCUTILS_LOG_NAMED(severity, NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_ONCE(severity, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_ONCE_BEFORE, RCUTILS_LOG_CONDITION_ONCE_AFTER, NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_EXPRESSION(severity, expression, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression), RCUTILS_LOG_CONDITION_EXPRESSION_AFTER, NULL, __VA_ARGS__)
       #define RCUTILS_LOG_DEBUG_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_DEBUG, name, __VA_ARGS__)
       #define RCUTILS_LOG_INFO_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_INFO, name, __VA_ARGS__)
       #define RCUTILS_LOG_WARN_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_WARN, name, __VA_ARGS__)
       #define RCUTILS_LOG_ERROR_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_ERROR, name, __VA_ARGS__)
       #define RCUTILS_LOG_FATAL_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_FATAL, name, __VA_ARGS__)
+      #define RCUTILS_LOG_ERROR_EXPRESSION(expression, ...) RCUTILS_LOG_EXPRESSION(RCUTILS_LOG_SEVERITY_ERROR, expression, __VA_ARGS__)
+      #define RCUTILS_LOG_WARN_ONCE(...) RCUTILS_LOG_ONCE(RCUTILS_LOG_SEVERITY_WARN, __VA_ARGS__)
       #define RCUTILS_LOG_DEBUG(...) RCUTILS_LOG_DEBUG_NAMED(NULL, __VA_ARGS__)
       #define RCUTILS_LOG_INFO(...) RCUTILS_LOG_INFO_NAMED(NULL, __VA_ARGS__)
       #define RCUTILS_LOG_WARN(...) RCUTILS_LOG_WARN_NAMED(NULL, __VA_ARGS__)

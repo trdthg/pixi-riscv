@@ -82,7 +82,7 @@ Current policy:
   - Required CMake helper package for `rmw-implementation`.
 - [x] `rmw-implementation`
   - Bootstrap proxy library only; real DDS communication still requires one concrete RMW implementation below.
-- [ ] `rmw-dds-common`
+- [x] `rmw-dds-common`
 - [ ] `rmw-cyclonedds-cpp`
   - Preferred first RMW candidate if dependencies are manageable.
 - [ ] `rmw-fastrtps-cpp`

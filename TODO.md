@@ -93,6 +93,14 @@ Current policy:
   - Alternative path if matching the existing source build path is more practical.
 - [ ] `rmw-fastrtps-shared-cpp`
 - [ ] `rmw-fastrtps-dynamic-cpp`
+- [ ] `fastcdr`
+  - FastDDS serialization dependency.
+- [ ] `fastrtps`
+  - FastDDS transport library dependency.
+- [ ] `fastrtps-cmake-module`
+  - CMake compatibility shim expected by ROS 2 Humble FastDDS packages.
+- [ ] `rosidl-typesupport-fastrtps-c`
+- [ ] `rosidl-typesupport-fastrtps-cpp`
 
 ## P6: rcl / Python Client Library
 

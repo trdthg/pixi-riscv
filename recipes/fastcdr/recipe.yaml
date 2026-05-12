@@ -1,0 +1,68 @@
+context:
+  name: "fastcdr"
+  version: "1.0.24"
+  git_rev: "da2987299ee3104bb0393cf0afc8aad6fb848dc1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/eProsima/Fast-CDR.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DEPROSIMA_BUILD_TESTS=OFF -DBUILD_DOCUMENTATION=OFF
+    - cmake --build . --target install -- -j"$(nproc)"
+
+# This recipe intentionally uses the host cmake and compiler on the native
+# riscv runner. Enable these dependencies once the riscv channel has compilers.
+# requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libfastcdr.so
+      - test -f $PREFIX/include/fastcdr/Cdr.h
+      - test -f $PREFIX/include/fastcdr/FastBuffer.h
+      - test -f $PREFIX/lib/cmake/fastcdr/fastcdr-config.cmake
+      - |
+        cat > test_fastcdr.cpp <<'EOF'
+        #include <cstdint>
+        #include <fastcdr/Cdr.h>
+        #include <fastcdr/FastBuffer.h>
+        int main() {
+          char raw[64] {};
+          eprosima::fastcdr::FastBuffer buffer(raw, sizeof(raw));
+          eprosima::fastcdr::Cdr cdr(buffer);
+          uint32_t out = 42;
+          cdr << out;
+          eprosima::fastcdr::Cdr reader(buffer);
+          uint32_t in = 0;
+          reader >> in;
+          return in == out ? 0 : 1;
+        }
+        EOF
+      - c++ -std=c++11 -I$PREFIX/include test_fastcdr.cpp -L$PREFIX/lib -lfastcdr -Wl,-rpath,$PREFIX/lib -o test_fastcdr
+      - ./test_fastcdr
+
+about:
+  homepage: https://github.com/eProsima/Fast-CDR
+  repository: https://github.com/eProsima/Fast-CDR
+  summary: C++ library for CDR serialization
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

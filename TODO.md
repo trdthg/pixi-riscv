@@ -95,6 +95,8 @@ Current policy:
 - [ ] `rmw-fastrtps-dynamic-cpp`
 - [x] `fastcdr`
   - FastDDS serialization dependency.
+- [ ] `foonathan-memory`
+  - FastDDS allocator dependency providing CMake package `foonathan_memory`.
 - [ ] `fastrtps`
   - FastDDS transport library dependency.
 - [ ] `fastrtps-cmake-module`

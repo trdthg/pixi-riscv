@@ -1,0 +1,64 @@
+context:
+  name: "foonathan-memory"
+  version: "0.7.4"
+  git_rev: "1de8562aa2b8241ca3d562ddc6d1e9a5cfc07e94"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/eProsima/memory.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFOONATHAN_MEMORY_BUILD_EXAMPLES=OFF -DFOONATHAN_MEMORY_BUILD_TESTS=OFF -DFOONATHAN_MEMORY_BUILD_TOOLS=OFF
+    - cmake --build . --target install -- -j"$(nproc)"
+
+# This recipe intentionally uses the host cmake and compiler on the native
+# riscv runner. Enable these dependencies once the riscv channel has compilers.
+# requirements:
+#   build:
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/include/foonathan/memory/memory_pool.hpp
+      - test -f $PREFIX/lib/foonathan_memory/cmake/foonathan_memory-config.cmake
+      - |
+        if ! ls "$PREFIX"/lib/libfoonathan_memory*.so >/dev/null 2>&1; then
+          echo "missing foonathan_memory shared library"
+          exit 1
+        fi
+      - |
+        cat > test_foonathan_memory.cpp <<'EOF'
+        #include <foonathan/memory/memory_pool.hpp>
+        #include <foonathan/memory/heap_allocator.hpp>
+        int main() {
+          foonathan::memory::memory_pool<foonathan::memory::node_pool, foonathan::memory::heap_allocator> pool(16, 4);
+          void * ptr = pool.allocate_node();
+          pool.deallocate_node(ptr);
+          return 0;
+        }
+        EOF
+      - c++ -std=c++11 -I$PREFIX/include test_foonathan_memory.cpp -L$PREFIX/lib -lfoonathan_memory-0.7.4 -Wl,-rpath,$PREFIX/lib -o test_foonathan_memory
+      - ./test_foonathan_memory
+
+about:
+  homepage: https://github.com/eProsima/memory
+  repository: https://github.com/eProsima/memory
+  summary: STL compatible C++ memory allocator library used by Fast DDS
+  license: Zlib
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

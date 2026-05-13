@@ -18,6 +18,8 @@ Current policy:
   - Provides `pybind11 2.13.6`, needed for Python 3.13 compatibility in the `rclpy` path.
 - [x] `ament-package`
   - Provides the early Python metadata helper used by the ament build system.
+- [x] `patchelf`
+  - Provides the ELF relocation tool needed by rattler-build for larger shared-library packages.
 
 ## P1: ament / colcon Foundation
 
@@ -101,7 +103,7 @@ Current policy:
   - Header-only standalone Asio dependency for FastDDS.
 - [x] `tinyxml2`
   - XML parser dependency for FastDDS.
-- [ ] `fastrtps`
+- [x] `fastrtps`
   - FastDDS transport library dependency.
 - [ ] `fastrtps-cmake-module`
   - CMake compatibility shim expected by ROS 2 Humble FastDDS packages.

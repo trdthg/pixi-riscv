@@ -138,6 +138,8 @@ jobs:
               'recipes/rcl-lifecycle': 790,
               'recipes/pybind11-vendor': 800,
               'recipes/rclpy': 810,
+              'recipes/libstatistics-collector': 820,
+              'recipes/rclcpp': 830,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

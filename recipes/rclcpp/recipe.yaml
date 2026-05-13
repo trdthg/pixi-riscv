@@ -1,0 +1,112 @@
+context:
+  name: "rclcpp"
+  version: "16.0.19"
+  git_rev: "867bcf5579bac32ab888460dddca49d7ae3671ea"
+  source_dir: "rclcpp"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rclcpp.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+    - cd ${{ source_dir }}
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake-gen-version-h
+    - ament-cmake-ros
+    - ament-index-cpp
+    - builtin-interfaces
+    - empy
+    - libstatistics-collector
+    - rcl
+    - rcl-interfaces
+    - rcl-yaml-param-parser
+    - rcpputils
+    - rcutils
+    - rmw
+    - rosgraph-msgs
+    - rosidl-runtime-cpp
+    - rosidl-typesupport-c
+    - rosidl-typesupport-cpp
+    - statistics-msgs
+    - tracetools
+  run:
+    - ament-cmake-gen-version-h
+    - ament-cmake-ros
+    - ament-index-cpp
+    - builtin-interfaces
+    - libstatistics-collector
+    - rcl
+    - rcl-interfaces
+    - rcl-yaml-param-parser
+    - rcpputils
+    - rcutils
+    - rmw
+    - rosgraph-msgs
+    - rosidl-runtime-cpp
+    - rosidl-typesupport-c
+    - rosidl-typesupport-cpp
+    - statistics-msgs
+    - tracetools
+
+# This recipe intentionally uses host cmake, compiler, and Python on the native
+# riscv runner. Enable these dependencies once the riscv channel has Python.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   host:
+#     - python
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librclcpp.so
+      - test -f $PREFIX/include/rclcpp/rclcpp/rclcpp.hpp
+      - test -f $PREFIX/share/rclcpp/cmake/rclcppConfig.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(test_rclcpp CXX)
+        find_package(rclcpp REQUIRED)
+        add_executable(test_rclcpp test_rclcpp.cpp)
+        target_link_libraries(test_rclcpp PRIVATE rclcpp::rclcpp)
+        EOF
+      - |
+        cat > test_rclcpp.cpp <<'EOF'
+        #include <rclcpp/init_options.hpp>
+        int main() {
+          return sizeof(rclcpp::InitOptions) > 0 ? 0 : 1;
+        }
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_rclcpp
+
+about:
+  homepage: https://github.com/ros2/rclcpp
+  repository: https://github.com/ros2/rclcpp
+  summary: C++ client library for ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

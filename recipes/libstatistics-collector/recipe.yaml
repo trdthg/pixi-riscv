@@ -1,0 +1,86 @@
+context:
+  name: "libstatistics-collector"
+  ros_name: "libstatistics_collector"
+  version: "1.3.4"
+  git_rev: "2f38291b9b36fea21467309d1ab83f022b65eaf7"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros-tooling/libstatistics_collector.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake
+    - ament-cmake-ros
+    - builtin-interfaces
+    - rcl
+    - rcpputils
+    - rosidl-default-generators
+    - statistics-msgs
+  run:
+    - ament-cmake
+    - ament-cmake-ros
+    - builtin-interfaces
+    - rcl
+    - rcpputils
+    - rosidl-default-runtime
+    - statistics-msgs
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/lib${{ ros_name }}.so
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/collector/collector.hpp
+      - test -f $PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_libstatistics_collector CXX)
+        find_package(libstatistics_collector REQUIRED)
+        add_executable(test_libstatistics_collector test_libstatistics_collector.cpp)
+        target_link_libraries(test_libstatistics_collector PRIVATE libstatistics_collector::libstatistics_collector)
+        EOF
+      - |
+        cat > test_libstatistics_collector.cpp <<'EOF'
+        #include <libstatistics_collector/moving_average_statistics/types.hpp>
+        int main() {
+          libstatistics_collector::moving_average_statistics::StatisticData data;
+          data.average = 1.0;
+          return data.average == 1.0 ? 0 : 1;
+        }
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_libstatistics_collector
+
+about:
+  homepage: https://github.com/ros-tooling/libstatistics_collector
+  repository: https://github.com/ros-tooling/libstatistics_collector
+  summary: Library for collecting ROS 2 topic statistics
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -1,0 +1,69 @@
+context:
+  name: "ament-cmake-pytest"
+  ros_name: "ament_cmake_pytest"
+  version: "1.3.14"
+  git_rev: "8289d61973f27e66930e0b656e67e12fa1d394cb"
+  source_dir: "ament_cmake_pytest"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ament/ament_cmake.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - mkdir -p "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
+    - cp ${{ ros_name }}-extras.cmake "$PREFIX/share/${{ ros_name }}/cmake/"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake" <<'EOF'
+      include("${CMAKE_CURRENT_LIST_DIR}/ament_cmake_pytest-extras.cmake")
+      EOF
+
+requirements:
+  host:
+    - ament-cmake-core
+    - ament-cmake-test
+  run:
+    - ament-cmake-core
+    - ament-cmake-test
+
+# This recipe intentionally uses system Python and pytest when tests are run.
+# future requirements:
+#   build:
+#     - cmake
+#   run:
+#     - python
+#     - pytest
+
+tests:
+  - script:
+      - test -f $PREFIX/share/ament_cmake_pytest/package.xml
+      - test -f $PREFIX/share/ament_cmake_pytest/cmake/ament_cmake_pytestConfig.cmake
+      - test -f $PREFIX/share/ament_cmake_pytest/cmake/ament_add_pytest_test.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_ament_cmake_pytest NONE)
+        find_package(ament_cmake_pytest REQUIRED)
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX -DBUILD_TESTING=OFF
+
+about:
+  homepage: https://github.com/ament/ament_cmake
+  repository: https://github.com/ament/ament_cmake
+  summary: Pytest integration for the ament CMake build system
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

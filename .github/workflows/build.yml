@@ -81,6 +81,7 @@ jobs:
               'recipes/gtest': 450,
               'recipes/gmock': 460,
               'recipes/ament-cmake-test': 470,
+              'recipes/ament-cmake-pytest': 475,
               'recipes/ament-cmake-gtest': 480,
               'recipes/ament-cmake-gmock': 490,
               'recipes/rmw-implementation-cmake': 500,

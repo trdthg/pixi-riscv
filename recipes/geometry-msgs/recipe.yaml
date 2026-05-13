@@ -4,8 +4,6 @@ context:
   version: "4.9.1"
   git_rev: "c3072dba174f18d41b64fcbbb20bed47a86e9898"
   source_dir: "geometry_msgs"
-  interface_files: "msg/Accel.msg msg/AccelStamped.msg msg/AccelWithCovariance.msg msg/AccelWithCovarianceStamped.msg msg/Inertia.msg msg/InertiaStamped.msg msg/Point.msg msg/Point32.msg msg/PointStamped.msg msg/Polygon.msg msg/PolygonInstance.msg msg/PolygonInstanceStamped.msg msg/PolygonStamped.msg msg/Pose.msg msg/Pose2D.msg msg/PoseArray.msg msg/PoseStamped.msg msg/PoseWithCovariance.msg msg/PoseWithCovarianceStamped.msg msg/Quaternion.msg msg/QuaternionStamped.msg msg/Transform.msg msg/TransformStamped.msg msg/Twist.msg msg/TwistStamped.msg msg/TwistWithCovariance.msg msg/TwistWithCovarianceStamped.msg msg/Vector3.msg msg/Vector3Stamped.msg msg/VelocityStamped.msg msg/Wrench.msg msg/WrenchStamped.msg"
-  recursive_dependencies: "std_msgs"
 
 package:
   name: ${{ name }}
@@ -16,227 +14,84 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_interfaces"
-    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
-    - mkdir -p /tmp/${{ ros_name }}_idl
-    - |
-      python3 - <<'PY'
-      from pathlib import Path
-
-      primitive_map = {
-          'bool': 'boolean',
-          'byte': 'octet',
-          'char': 'uint8',
-          'float32': 'float',
-          'float64': 'double',
-          'int8': 'int8',
-          'uint8': 'uint8',
-          'int16': 'int16',
-          'uint16': 'uint16',
-          'int32': 'int32',
-          'uint32': 'uint32',
-          'int64': 'int64',
-          'uint64': 'uint64',
-          'string': 'string',
-      }
-
-      def split_comment(line):
-          return line.split('#', 1)[0].strip()
-
-      def idl_type(type_name):
-          suffix = ''
-          if type_name.endswith('[]'):
-              type_name = type_name[:-2]
-              suffix = '[]'
-          elif '[' in type_name and type_name.endswith(']'):
-              base, bound = type_name[:-1].split('[', 1)
-              type_name = base
-              suffix = f'[{bound}]'
-          if '/' in type_name:
-              pkg, name = type_name.split('/', 1)
-              value = f'{pkg}::msg::{name}'
-          else:
-              value = primitive_map.get(type_name, f'{pkg_name}::msg::{type_name}')
-          if suffix == '[]':
-              return f'sequence<{value}>'
-          if suffix.startswith('['):
-              return f'{value}{suffix}'
-          return value
-
-      def include_for(type_name):
-          while type_name.endswith('[]') or ('[' in type_name and type_name.endswith(']')):
-              if type_name.endswith('[]'):
-                  type_name = type_name[:-2]
-              else:
-                  type_name = type_name[:type_name.rfind('[')]
-          if '/' in type_name:
-              pkg, name = type_name.split('/', 1)
-              return f'#include "{pkg}/msg/{name}.idl"'
-          if type_name not in primitive_map and type_name[:1].isupper():
-              return f'#include "{pkg_name}/msg/{type_name}.idl"'
-          return None
-
-      def parse_fields(lines):
-          includes, constants, fields = set(), [], []
-          for raw in lines:
-              line = split_comment(raw)
-              if not line:
-                  continue
-              parts = line.split()
-              if len(parts) < 2:
-                  continue
-              type_name, name = parts[0], parts[1]
-              inc = include_for(type_name)
-              if inc:
-                  includes.add(inc)
-              if '=' in name:
-                  name, value = name.split('=', 1)
-                  constants.append((idl_type(type_name), name, value))
-              elif len(parts) >= 3 and parts[2] == '=':
-                  constants.append((idl_type(type_name), name, parts[3]))
-              else:
-                  fields.append((idl_type(type_name), name))
-          return sorted(includes), constants, fields
-
-      def render_msg(rel, lines):
-          name = Path(rel).stem
-          includes, constants, fields = parse_fields(lines)
-          body = []
-          body.extend(includes)
-          if includes:
-              body.append('')
-          body.extend([
-              f'module {pkg_name} ' + chr(123),
-              '  module msg {',
-          ])
-          if constants:
-              body.append(f'    module {name}_Constants ' + chr(123))
-              for typ, const_name, value in constants:
-                  body.append(f'      const {typ} {const_name} = {value};')
-              body.append('    };')
-          body.append(f'    struct {name} ' + chr(123))
-          for typ, field_name in fields:
-              body.append(f'      {typ} {field_name};')
-          body.extend(['    };', '  };', '};', ''])
-          return '\n'.join(body)
-
-      def split_srv(text):
-          before, sep, after = text.partition('---')
-          return before.splitlines(), after.splitlines() if sep else []
-
-      def render_srv(rel, text):
-          name = Path(rel).stem
-          request_lines, response_lines = split_srv(text)
-          req_includes, req_constants, req_fields = parse_fields(request_lines)
-          res_includes, res_constants, res_fields = parse_fields(response_lines)
-          body = []
-          includes = sorted(set(req_includes) | set(res_includes))
-          body.extend(includes)
-          if includes:
-              body.append('')
-          body.extend([f'module {pkg_name} ' + chr(123), '  module srv ' + chr(123)])
-          body.append(f'    struct {name}_Request ' + chr(123))
-          for typ, field_name in req_fields:
-              body.append(f'      {typ} {field_name};')
-          body.append('    };')
-          if res_constants:
-              body.append(f'    module {name}_Response_Constants ' + chr(123))
-              for typ, const_name, value in res_constants:
-                  body.append(f'      const {typ} {const_name} = {value};')
-              body.append('    };')
-          body.append(f'    struct {name}_Response ' + chr(123))
-          for typ, field_name in res_fields:
-              body.append(f'      {typ} {field_name};')
-          body.extend(['    };', '  };', '};', ''])
-          return '\n'.join(body)
-
-      pkg_name = '${{ ros_name }}'
-      files = "${{ interface_files }}".split()
-      out_base = Path('/tmp/${{ ros_name }}_idl')
-      tuples = []
-      for rel in files:
-          src = Path(rel)
-          out = out_base / src.with_suffix('.idl')
-          out.parent.mkdir(parents=True, exist_ok=True)
-          if src.suffix == '.srv':
-              out.write_text(render_srv(rel, src.read_text()))
-          else:
-              out.write_text(render_msg(rel, src.read_text().splitlines()))
-          tuples.append(f'{out_base}:{out.relative_to(out_base)}')
-      Path('/tmp/${{ ros_name }}_idl_tuples.txt').write_text('\n'.join(tuples) + '\n')
-      PY
-    - |
-      for path in ${{ interface_files }}; do
-        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$path")"
-        cp "$path" "$PREFIX/share/${{ ros_name }}/$path"
-      done
-    - |
-      while IFS= read -r tuple; do
-        rel="${tuple#*:}"
-        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$rel")"
-        cp "/tmp/${{ ros_name }}_idl/$rel" "$PREFIX/share/${{ ros_name }}/$rel"
-      done < /tmp/${{ ros_name }}_idl_tuples.txt
-    - |
-      cp /tmp/${{ ros_name }}_idl_tuples.txt /tmp/${{ ros_name }}_idl_tuples_rel.txt
-      sed -i 's#^.*/tmp/${{ ros_name }}_idl:##' /tmp/${{ ros_name }}_idl_tuples_rel.txt
-      { cat /tmp/${{ ros_name }}_idl_tuples_rel.txt; printf '%s\n' ${{ interface_files }}; } | sort > "$PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}"
-    - |
-      IDL_FILES=$(paste -sd ';' /tmp/${{ ros_name }}_idl_tuples_rel.txt)
-      INTERFACE_FILES=$(printf '%s\n' ${{ interface_files }} | paste -sd ';')
-      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_cmake-extras.cmake" <<EOF
-      set(${{ ros_name }}_IDL_FILES "${IDL_FILES}")
-      set(${{ ros_name }}_INTERFACE_FILES "${INTERFACE_FILES}")
-      set(${{ ros_name }}_RECURSIVE_DEPENDENCIES "${{ recursive_dependencies }}")
-      set(${{ ros_name }}_TARGETS "")
-      EOF
-    - |
-      cat > "$PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake" <<EOF
-      set(${{ ros_name }}_FOUND_AMENT_PACKAGE TRUE)
-      include("\${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
-      EOF
-    - |
-      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+      export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
 
 requirements:
+  build:
+    - patchelf
   host:
+    - ament-cmake
+    - rosidl-default-generators
+    - setuptools
     - std-msgs
   run:
+    - ament-cmake
+    - rosidl-default-runtime
     - std-msgs
 
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
 # future requirements:
-#   run:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   host:
 #     - python
-#     - rosidl-generator-py
+#   run:
+#     - libstdcxx
+#     - python
 
 tests:
   - script:
-      - test -f $PREFIX/share/${{ ros_name }}/package.xml
-      - test -f $PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Twist.msg
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Twist.idl
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Vector3.msg
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Vector3.idl
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/twist.h
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/twist.hpp
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/vector3.h
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/vector3.hpp
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_generator_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_cpp.so
       - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
-      - test -f $PREFIX/share/${{ ros_name }}/msg/Accel.msg
-      - test -f $PREFIX/share/${{ ros_name }}/msg/Accel.idl
-      - grep -q 'msg/Accel.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - grep -q 'msg/Twist.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.16)
-        project(test_${{ ros_name }})
-        find_package(${{ ros_name }} REQUIRED)
-        if(NOT "msg/Accel.idl" IN_LIST ${{ ros_name }}_IDL_FILES)
-          message(FATAL_ERROR "missing msg/Accel.idl")
+        project(test_geometry_msgs C CXX)
+        find_package(geometry_msgs REQUIRED)
+        if(NOT "msg/Twist.idl" IN_LIST geometry_msgs_IDL_FILES)
+          message(FATAL_ERROR "missing Twist.idl")
         endif()
         EOF
       - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - |
+        cat > test_geometry_msgs.cpp <<'EOF'
+        #include <geometry_msgs/msg/twist.hpp>
+        int main() {
+          geometry_msgs::msg::Twist msg;
+          msg.linear.x = 1.0;
+          msg.angular.z = -0.5;
+          return msg.linear.x == 1.0 && msg.angular.z == -0.5 ? 0 : 1;
+        }
+        EOF
+      - c++ -std=c++14 -I$PREFIX/include -I$PREFIX/include/geometry_msgs test_geometry_msgs.cpp -o test_geometry_msgs
+      - ./test_geometry_msgs
 
 about:
   homepage: https://github.com/ros2/common_interfaces
   repository: https://github.com/ros2/common_interfaces
-  summary: Geometry messages for ROS 2, including Twist
+  summary: Geometry message definitions for ROS 2
   license: Apache-2.0
   license_file: LICENSE
 

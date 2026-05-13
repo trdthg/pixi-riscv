@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include/ament_index_cpp" "$PREFIX/lib" "$PREFIX/share/ament_index_cpp/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -26,10 +26,12 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/ament_index_cpp"
     - |
       cat > "$PREFIX/share/ament_index_cpp/cmake/ament_index_cppConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       include("${CMAKE_CURRENT_LIST_DIR}/ament_index_cppTargets.cmake")
       EOF
     - |
       cat > "$PREFIX/share/ament_index_cpp/cmake/ament_index_cppTargets.cmake" <<'EOF'
+      include_guard(GLOBAL)
       add_library(ament_index_cpp::ament_index_cpp SHARED IMPORTED)
       set_target_properties(ament_index_cpp::ament_index_cpp PROPERTIES
         IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libament_index_cpp.so"
@@ -58,6 +60,18 @@ tests:
           return 0;
         }
         EOF
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_ament_index_cpp_cmake CXX)
+        find_package(ament_index_cpp REQUIRED)
+        find_package(ament_index_cpp REQUIRED)
+        add_executable(test_ament_index_cpp_cmake test_ament_index_cpp.cpp)
+        target_link_libraries(test_ament_index_cpp_cmake PRIVATE ament_index_cpp::ament_index_cpp)
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - AMENT_PREFIX_PATH=$PREFIX ./build/test_ament_index_cpp_cmake
       - c++ -std=c++14 -I$PREFIX/include test_ament_index_cpp.cpp -L$PREFIX/lib -lament_index_cpp -Wl,-rpath,$PREFIX/lib -o test_ament_index_cpp
       - AMENT_PREFIX_PATH=$PREFIX ./test_ament_index_cpp
 

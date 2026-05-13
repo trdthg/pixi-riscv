@@ -20,7 +20,7 @@ Current policy:
   - Provides the early Python metadata helper used by the ament build system.
 - [x] `pyparsing`
   - Provides the pure-Python parser dependency used by `catkin-pkg`.
-- [ ] `setuptools`
+- [x] `setuptools`
   - Provides `find_packages` and setup helpers required by generated ament Python install steps.
 - [ ] `lark`
   - Provides the parser backend required by `rosidl-parser`.

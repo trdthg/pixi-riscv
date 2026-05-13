@@ -37,7 +37,12 @@ tests:
   - script:
       - |
         SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-      - PYTHONPATH="$SITE_PACKAGES" python3 -c "from lark import Lark; Lark('start: \"x\"'); print('lark ok')"
+      - |
+        PYTHONPATH="$SITE_PACKAGES" python3 - <<'PY'
+        from lark import Lark
+        Lark('start: "x"')
+        print('lark ok')
+        PY
 
 about:
   homepage: https://github.com/lark-parser/lark

@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/share/ament_cmake_ros/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -24,6 +24,11 @@ build:
     - cp ament_cmake_ros-extras.cmake.in "$PREFIX/share/ament_cmake_ros/cmake/ament_cmake_ros-extras.cmake"
     - |
       cat > "$PREFIX/share/ament_cmake_ros/cmake/ament_cmake_rosConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
+      find_package(ament_cmake REQUIRED)
+      find_package(ament_cmake_gmock REQUIRED)
+      find_package(ament_cmake_gtest REQUIRED)
+      find_package(ament_cmake_pytest REQUIRED)
       include("${CMAKE_CURRENT_LIST_DIR}/ament_cmake_ros-extras.cmake")
       EOF
 
@@ -56,6 +61,9 @@ tests:
         cmake_minimum_required(VERSION 3.10)
         project(test_ament_cmake_ros NONE)
         find_package(ament_cmake_ros REQUIRED)
+        if(NOT COMMAND ament_target_dependencies)
+          message(FATAL_ERROR "ament_target_dependencies was not exported through ament_cmake_ros")
+        endif()
         EOF
       - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX -DBUILD_TESTING=OFF
 

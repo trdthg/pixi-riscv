@@ -1,0 +1,82 @@
+context:
+  name: "type-description-interfaces"
+  ros_name: "type_description_interfaces"
+  version: "2.0.0"
+  git_rev: "2b5900959a8969e52f344ed3495d9d36eeb1a28d"
+  source_dir: "type_description_interfaces"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcl_interfaces.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake
+    - rosidl-core-generators
+    - setuptools
+  run:
+    - ament-cmake
+    - rosidl-core-runtime
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   host:
+#     - python
+#   run:
+#     - libstdcxx
+#     - python
+
+tests:
+  - script:
+      - test -f $PREFIX/share/${{ ros_name }}/msg/TypeDescription.idl
+      - test -f $PREFIX/share/${{ ros_name }}/srv/GetTypeDescription.idl
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/type_description.hpp
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/srv/get_type_description.hpp
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_generator_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_cpp.so
+      - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - grep -q 'msg/TypeDescription.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - |
+        cat > CMakeLists.txt <<EOF2
+        cmake_minimum_required(VERSION 3.16)
+        project(test_type_description_interfaces C CXX)
+        find_package(type_description_interfaces REQUIRED)
+        if(NOT "msg/TypeDescription.idl" IN_LIST type_description_interfaces_IDL_FILES)
+          message(FATAL_ERROR "missing msg/TypeDescription.idl")
+        endif()
+        EOF2
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/rcl_interfaces
+  repository: https://github.com/ros2/rcl_interfaces
+  summary: ROS type description messages and services
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

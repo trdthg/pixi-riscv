@@ -1,0 +1,82 @@
+context:
+  name: "lifecycle-msgs"
+  ros_name: "lifecycle_msgs"
+  version: "2.0.0"
+  git_rev: "2b5900959a8969e52f344ed3495d9d36eeb1a28d"
+  source_dir: "lifecycle_msgs"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcl_interfaces.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake
+    - rosidl-default-generators
+    - setuptools
+  run:
+    - ament-cmake
+    - rosidl-default-runtime
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   host:
+#     - python
+#   run:
+#     - libstdcxx
+#     - python
+
+tests:
+  - script:
+      - test -f $PREFIX/share/${{ ros_name }}/msg/State.idl
+      - test -f $PREFIX/share/${{ ros_name }}/srv/GetState.idl
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/state.hpp
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/srv/get_state.hpp
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_generator_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_cpp.so
+      - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - grep -q 'msg/State.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - |
+        cat > CMakeLists.txt <<EOF2
+        cmake_minimum_required(VERSION 3.16)
+        project(test_lifecycle_msgs C CXX)
+        find_package(lifecycle_msgs REQUIRED)
+        if(NOT "msg/State.idl" IN_LIST lifecycle_msgs_IDL_FILES)
+          message(FATAL_ERROR "missing msg/State.idl")
+        endif()
+        EOF2
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/rcl_interfaces
+  repository: https://github.com/ros2/rcl_interfaces
+  summary: ROS lifecycle state and transition messages
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

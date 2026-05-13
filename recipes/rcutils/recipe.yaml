@@ -12,7 +12,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 3
+  number: 4
   script:
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rcutils/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R include/rcutils "$PREFIX/include/"
@@ -21,64 +21,116 @@ build:
       mkdir -p "$SITE_PACKAGES"
       cp -R rcutils "$SITE_PACKAGES/"
     - |
-      cat > "$PREFIX/include/rcutils/logging_macros.h" <<'EOF'
-      #ifndef RCUTILS__LOGGING_MACROS_H_
-      #define RCUTILS__LOGGING_MACROS_H_
-      #include "rcutils/logging.h"
-      #define RCUTILS_LOG_MIN_SEVERITY_DEBUG 0
-      #define RCUTILS_LOG_MIN_SEVERITY_INFO 1
-      #define RCUTILS_LOG_MIN_SEVERITY_WARN 2
-      #define RCUTILS_LOG_MIN_SEVERITY_ERROR 3
-      #define RCUTILS_LOG_MIN_SEVERITY_FATAL 4
-      #define RCUTILS_LOG_MIN_SEVERITY_NONE 5
-      #ifndef RCUTILS_LOG_MIN_SEVERITY
-      #define RCUTILS_LOG_MIN_SEVERITY RCUTILS_LOG_MIN_SEVERITY_DEBUG
-      #endif
-      #define RCUTILS_LOG_COND_NAMED(severity, condition_before, condition_after, name, ...) \
-        do { \
-          RCUTILS_LOGGING_AUTOINIT; \
-          static rcutils_log_location_t __rcutils_logging_location = {__func__, __FILE__, __LINE__}; \
-          if (rcutils_logging_logger_is_enabled_for(name, severity)) { \
-            condition_before \
-            rcutils_log(&__rcutils_logging_location, severity, name, __VA_ARGS__); \
-            condition_after \
-          } \
-        } while (0)
-      #define RCUTILS_LOG_CONDITION_EMPTY
-      #define RCUTILS_LOG_CONDITION_ONCE_BEFORE \
-        { \
-          static int __rcutils_logging_once = 0; \
-          if (0 == __rcutils_logging_once) { \
-            __rcutils_logging_once = 1;
-      #define RCUTILS_LOG_CONDITION_ONCE_AFTER } \
-      }
-      #define RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression) \
-        if (expression) {
-      #define RCUTILS_LOG_CONDITION_EXPRESSION_AFTER }
-      #define RCUTILS_LOG_NAMED(severity, name, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EMPTY, RCUTILS_LOG_CONDITION_EMPTY, name, __VA_ARGS__)
-      #define RCUTILS_LOG(severity, ...) RCUTILS_LOG_NAMED(severity, NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_ONCE(severity, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_ONCE_BEFORE, RCUTILS_LOG_CONDITION_ONCE_AFTER, NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_EXPRESSION(severity, expression, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression), RCUTILS_LOG_CONDITION_EXPRESSION_AFTER, NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_EXPRESSION_NAMED(severity, expression, name, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression), RCUTILS_LOG_CONDITION_EXPRESSION_AFTER, name, __VA_ARGS__)
-      #define RCUTILS_LOG_DEBUG_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_DEBUG, name, __VA_ARGS__)
-      #define RCUTILS_LOG_INFO_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_INFO, name, __VA_ARGS__)
-      #define RCUTILS_LOG_WARN_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_WARN, name, __VA_ARGS__)
-      #define RCUTILS_LOG_ERROR_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_ERROR, name, __VA_ARGS__)
-      #define RCUTILS_LOG_FATAL_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_FATAL, name, __VA_ARGS__)
-      #define RCUTILS_LOG_DEBUG_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_DEBUG, expression, name, __VA_ARGS__)
-      #define RCUTILS_LOG_INFO_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_INFO, expression, name, __VA_ARGS__)
-      #define RCUTILS_LOG_WARN_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_WARN, expression, name, __VA_ARGS__)
-      #define RCUTILS_LOG_ERROR_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_ERROR, expression, name, __VA_ARGS__)
-      #define RCUTILS_LOG_FATAL_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_FATAL, expression, name, __VA_ARGS__)
-      #define RCUTILS_LOG_ERROR_EXPRESSION(expression, ...) RCUTILS_LOG_EXPRESSION(RCUTILS_LOG_SEVERITY_ERROR, expression, __VA_ARGS__)
-      #define RCUTILS_LOG_WARN_ONCE(...) RCUTILS_LOG_ONCE(RCUTILS_LOG_SEVERITY_WARN, __VA_ARGS__)
-      #define RCUTILS_LOG_DEBUG(...) RCUTILS_LOG_DEBUG_NAMED(NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_INFO(...) RCUTILS_LOG_INFO_NAMED(NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_WARN(...) RCUTILS_LOG_WARN_NAMED(NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_ERROR(...) RCUTILS_LOG_ERROR_NAMED(NULL, __VA_ARGS__)
-      #define RCUTILS_LOG_FATAL(...) RCUTILS_LOG_FATAL_NAMED(NULL, __VA_ARGS__)
-      #endif
-      EOF
+      python3 - <<'PY'
+      from pathlib import Path
+      import os
+
+      severities = ("DEBUG", "INFO", "WARN", "ERROR", "FATAL")
+      combinations = (
+          ("", (), ("RCUTILS_LOG_CONDITION_EMPTY", "RCUTILS_LOG_CONDITION_EMPTY", "NULL")),
+          ("_NAMED", ("name",), ("RCUTILS_LOG_CONDITION_EMPTY", "RCUTILS_LOG_CONDITION_EMPTY", "name")),
+          ("_ONCE", (), ("RCUTILS_LOG_CONDITION_ONCE_BEFORE", "RCUTILS_LOG_CONDITION_ONCE_AFTER", "NULL")),
+          ("_ONCE_NAMED", ("name",), ("RCUTILS_LOG_CONDITION_ONCE_BEFORE", "RCUTILS_LOG_CONDITION_ONCE_AFTER", "name")),
+          ("_EXPRESSION", ("expression",), ("RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression)", "RCUTILS_LOG_CONDITION_EXPRESSION_AFTER", "NULL")),
+          ("_EXPRESSION_NAMED", ("expression", "name"), ("RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression)", "RCUTILS_LOG_CONDITION_EXPRESSION_AFTER", "name")),
+          ("_FUNCTION", ("function",), ("RCUTILS_LOG_CONDITION_FUNCTION_BEFORE(function)", "RCUTILS_LOG_CONDITION_FUNCTION_AFTER", "NULL")),
+          ("_FUNCTION_NAMED", ("function", "name"), ("RCUTILS_LOG_CONDITION_FUNCTION_BEFORE(function)", "RCUTILS_LOG_CONDITION_FUNCTION_AFTER", "name")),
+          ("_SKIPFIRST", (), ("RCUTILS_LOG_CONDITION_SKIPFIRST_BEFORE", "RCUTILS_LOG_CONDITION_SKIPFIRST_AFTER", "NULL")),
+          ("_SKIPFIRST_NAMED", ("name",), ("RCUTILS_LOG_CONDITION_SKIPFIRST_BEFORE", "RCUTILS_LOG_CONDITION_SKIPFIRST_AFTER", "name")),
+          ("_THROTTLE", ("get_time_point_value", "duration"), ("RCUTILS_LOG_CONDITION_THROTTLE_BEFORE(get_time_point_value, duration)", "RCUTILS_LOG_CONDITION_THROTTLE_AFTER", "NULL")),
+          ("_SKIPFIRST_THROTTLE", ("get_time_point_value", "duration"), ("RCUTILS_LOG_CONDITION_THROTTLE_BEFORE(get_time_point_value, duration) RCUTILS_LOG_CONDITION_SKIPFIRST_BEFORE", "RCUTILS_LOG_CONDITION_THROTTLE_AFTER RCUTILS_LOG_CONDITION_SKIPFIRST_AFTER", "NULL")),
+          ("_THROTTLE_NAMED", ("get_time_point_value", "duration", "name"), ("RCUTILS_LOG_CONDITION_THROTTLE_BEFORE(get_time_point_value, duration)", "RCUTILS_LOG_CONDITION_THROTTLE_AFTER", "name")),
+          ("_SKIPFIRST_THROTTLE_NAMED", ("get_time_point_value", "duration", "name"), ("RCUTILS_LOG_CONDITION_THROTTLE_BEFORE(get_time_point_value, duration) RCUTILS_LOG_CONDITION_SKIPFIRST_BEFORE", "RCUTILS_LOG_CONDITION_THROTTLE_AFTER RCUTILS_LOG_CONDITION_SKIPFIRST_AFTER", "name")),
+      )
+
+      lines = [
+          "#ifndef RCUTILS__LOGGING_MACROS_H_",
+          "#define RCUTILS__LOGGING_MACROS_H_",
+          '#include "rcutils/logging.h"',
+          "",
+          "#ifdef __cplusplus",
+          "#define RCUTILS_CAST_DURATION(x) (static_cast<rcutils_duration_value_t>(x))",
+          "#else",
+          "#define RCUTILS_CAST_DURATION(x) ((rcutils_duration_value_t)x)",
+          "#endif",
+          "",
+          "#define RCUTILS_LOG_MIN_SEVERITY_DEBUG 0",
+          "#define RCUTILS_LOG_MIN_SEVERITY_INFO 1",
+          "#define RCUTILS_LOG_MIN_SEVERITY_WARN 2",
+          "#define RCUTILS_LOG_MIN_SEVERITY_ERROR 3",
+          "#define RCUTILS_LOG_MIN_SEVERITY_FATAL 4",
+          "#define RCUTILS_LOG_MIN_SEVERITY_NONE 5",
+          "#ifndef RCUTILS_LOG_MIN_SEVERITY",
+          "#define RCUTILS_LOG_MIN_SEVERITY RCUTILS_LOG_MIN_SEVERITY_DEBUG",
+          "#endif",
+          "",
+          "#define RCUTILS_LOG_COND_NAMED(severity, condition_before, condition_after, name, ...) \\",
+          "  do { \\",
+          "    RCUTILS_LOGGING_AUTOINIT; \\",
+          "    static rcutils_log_location_t __rcutils_logging_location = {__func__, __FILE__, __LINE__}; \\",
+          "    if (rcutils_logging_logger_is_enabled_for(name, severity)) { \\",
+          "      condition_before \\",
+          "      rcutils_log(&__rcutils_logging_location, severity, name, __VA_ARGS__); \\",
+          "      condition_after \\",
+          "    } \\",
+          "  } while (0)",
+          "#define RCUTILS_LOG_CONDITION_EMPTY",
+          "#define RCUTILS_LOG_CONDITION_ONCE_BEFORE \\",
+          "  { \\",
+          "    static int __rcutils_logging_once = 0; \\",
+          "    if (RCUTILS_UNLIKELY(0 == __rcutils_logging_once)) { \\",
+          "      __rcutils_logging_once = 1;",
+          "#define RCUTILS_LOG_CONDITION_ONCE_AFTER } \\",
+          "}",
+          "#define RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression) \\",
+          "  if (expression) {",
+          "#define RCUTILS_LOG_CONDITION_EXPRESSION_AFTER }",
+          "typedef bool (* RclLogFilter)();",
+          "#define RCUTILS_LOG_CONDITION_FUNCTION_BEFORE(function) \\",
+          "  if ((*function)()) {",
+          "#define RCUTILS_LOG_CONDITION_FUNCTION_AFTER }",
+          "#define RCUTILS_LOG_CONDITION_SKIPFIRST_BEFORE \\",
+          "  { \\",
+          "    static bool __rcutils_logging_first = true; \\",
+          "    if (RCUTILS_UNLIKELY(true == __rcutils_logging_first)) { \\",
+          "      __rcutils_logging_first = false; \\",
+          "    } else {",
+          "#define RCUTILS_LOG_CONDITION_SKIPFIRST_AFTER } \\",
+          "}",
+          "#define RCUTILS_LOG_CONDITION_THROTTLE_BEFORE(get_time_point_value, duration) { \\",
+          "    static rcutils_duration_value_t __rcutils_logging_duration = RCUTILS_MS_TO_NS(RCUTILS_CAST_DURATION(duration)); \\",
+          "    static rcutils_time_point_value_t __rcutils_logging_last_logged = 0; \\",
+          "    rcutils_time_point_value_t __rcutils_logging_now = 0; \\",
+          "    bool __rcutils_logging_condition = true; \\",
+          "    if (get_time_point_value(&__rcutils_logging_now) != RCUTILS_RET_OK) { \\",
+          "      rcutils_log(&__rcutils_logging_location, RCUTILS_LOG_SEVERITY_ERROR, \"\", \"%s() at %s:%d getting current steady time failed\\n\", __func__, __FILE__, __LINE__); \\",
+          "    } else { \\",
+          "      __rcutils_logging_condition = __rcutils_logging_now >= __rcutils_logging_last_logged + __rcutils_logging_duration; \\",
+          "    } \\",
+          "    if (RCUTILS_LIKELY(__rcutils_logging_condition)) { \\",
+          "      __rcutils_logging_last_logged = __rcutils_logging_now;",
+          "#define RCUTILS_LOG_CONDITION_THROTTLE_AFTER } \\",
+          "}",
+          "",
+      ]
+
+      for severity in severities:
+          lines.append(f"#if (RCUTILS_LOG_MIN_SEVERITY > RCUTILS_LOG_MIN_SEVERITY_{severity})")
+          for suffix, params, _ in combinations:
+              params_text = "".join(f"{param}, " for param in params)
+              lines.append(f"#define RCUTILS_LOG_{severity}{suffix}({params_text}format, ...)")
+          lines.append("#else")
+          for suffix, params, args in combinations:
+              params_text = "".join(f"{param}, " for param in params)
+              args_text = ", ".join(args)
+              lines.append(f"#define RCUTILS_LOG_{severity}{suffix}({params_text}...) \\")
+              lines.append(f"  RCUTILS_LOG_COND_NAMED(RCUTILS_LOG_SEVERITY_{severity}, {args_text}, __VA_ARGS__)")
+          lines.append("#endif")
+          lines.append("")
+
+      lines.append("#endif")
+      Path(os.environ["PREFIX"], "include/rcutils/logging_macros.h").write_text("\n".join(lines) + "\n")
+      PY
     - |
       cc -std=c11 -fPIC -D_GNU_SOURCE -DRCUTILS_BUILDING_DLL -Iinclude -I"$PREFIX/include" -Isrc \
         -shared \
@@ -120,6 +172,7 @@ tests:
   - script:
       - test -f $PREFIX/lib/librcutils.so
       - test -f $PREFIX/include/rcutils/allocator.h
+      - test -f $PREFIX/include/rcutils/logging_macros.h
       - test -f $PREFIX/share/ament_index/resource_index/packages/rcutils
       - |
         SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
@@ -131,9 +184,21 @@ tests:
       - |
         cat > test_rcutils.c <<'EOF'
         #include <rcutils/allocator.h>
+        #include <rcutils/logging_macros.h>
+        bool test_filter(void) { return true; }
+        rcutils_ret_t test_time(rcutils_time_point_value_t * now) {
+          *now = 1000LL * 1000LL * 1000LL;
+          return RCUTILS_RET_OK;
+        }
         int main(void) {
           rcutils_allocator_t allocator = rcutils_get_default_allocator();
-          return rcutils_allocator_is_valid(&allocator) ? 0 : 1;
+          if (!rcutils_allocator_is_valid(&allocator)) {
+            return 1;
+          }
+          RCUTILS_LOG_INFO_ONCE_NAMED("rcutils_test", "hello");
+          RCUTILS_LOG_WARN_FUNCTION(&test_filter, "hello");
+          RCUTILS_LOG_ERROR_SKIPFIRST_THROTTLE_NAMED(test_time, 1000, "rcutils_test", "hello");
+          return 0;
         }
         EOF
       - cc -std=c11 -I$PREFIX/include test_rcutils.c -L$PREFIX/lib -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rcutils

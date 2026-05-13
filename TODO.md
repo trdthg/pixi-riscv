@@ -24,6 +24,10 @@ Current policy:
   - Provides the package manifest parser required by `ament-cmake-core`.
 - [x] `patchelf`
   - Provides the ELF relocation tool needed by rattler-build for larger shared-library packages.
+- [x] `gtest`
+  - Provides GoogleTest C++ test libraries used by ament CMake integration packages.
+- [x] `gmock`
+  - Provides GoogleMock C++ test libraries used by ament CMake integration packages.
 
 ## P1: ament / colcon Foundation
 
@@ -45,6 +49,10 @@ Current policy:
 - [x] `ament-cmake-export-libraries`
 - [x] `ament-cmake-export-link-flags`
 - [x] `ament-cmake-export-targets`
+- [x] `ament-cmake-test`
+- [x] `ament-cmake-pytest`
+- [x] `ament-cmake-gtest`
+- [x] `ament-cmake-gmock`
 
 ## P2: rosidl / Interface Generation
 

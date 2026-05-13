@@ -77,7 +77,9 @@ tests:
       - test -f $PREFIX/include/rmw_fastrtps_cpp/rmw_fastrtps_cpp/identifier.hpp
       - test -f $PREFIX/share/rmw_fastrtps_cpp/package.xml
       - test -f $PREFIX/share/ament_index/resource_index/packages/rmw_fastrtps_cpp
-      - test -f $PREFIX/share/ament_index/resource_index/rmw_implementation_packages/rmw_fastrtps_cpp
+      - test -f $PREFIX/share/ament_index/resource_index/rmw_typesupport/rmw_fastrtps_cpp
+      - test -f $PREFIX/share/ament_index/resource_index/rmw_typesupport_c/rmw_fastrtps_cpp
+      - test -f $PREFIX/share/ament_index/resource_index/rmw_typesupport_cpp/rmw_fastrtps_cpp
       - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.10)

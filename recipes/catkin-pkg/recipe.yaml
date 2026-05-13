@@ -1,0 +1,67 @@
+context:
+  name: "catkin-pkg"
+  python_name: "catkin_pkg"
+  version: "1.0.0"
+  git_rev: "fb2468e6c2565802bc3ef6134a76db76ae9f3632"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros-infrastructure/catkin_pkg.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES"
+    - cp -R src/${{ python_name }} "$SITE_PACKAGES/"
+    - mkdir -p "$SITE_PACKAGES/${{ python_name }}-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/${{ python_name }}-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: catkin-pkg
+      Version: ${{ version }}
+      Summary: Catkin package manifest parser
+      EOF
+
+requirements:
+  host:
+    - pyparsing
+  run:
+    - pyparsing
+
+# future requirements:
+#   build:
+#     - python
+#   run:
+#     - docutils
+#     - python
+#     - python-dateutil
+#     - setuptools
+
+tests:
+  - script:
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - |
+        PYTHONPATH="$SITE_PACKAGES" python3 - <<'PY'
+        from catkin_pkg.package import parse_package_string
+        pkg = parse_package_string("""<package format="3"><name>demo_pkg</name><version>0.0.1</version><description>demo</description><maintainer email="a@example.com">A</maintainer><license>Apache-2.0</license></package>""")
+        assert pkg.name == "demo_pkg"
+        print("catkin_pkg ok")
+        PY
+
+about:
+  homepage: https://github.com/ros-infrastructure/catkin_pkg
+  repository: https://github.com/ros-infrastructure/catkin_pkg
+  summary: Catkin package manifest parser
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

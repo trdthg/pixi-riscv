@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/share/ament_cmake_core/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -47,10 +47,13 @@ build:
 requirements:
   run:
     - ament-package
+    - catkin-pkg
 
 # future requirements:
 #   build:
 #     - cmake
+#   run:
+#     - python
 
 tests:
   - script:
@@ -58,10 +61,21 @@ tests:
       - test -f $PREFIX/share/ament_index/resource_index/packages/ament_cmake_core
       - test -f $PREFIX/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake
       - |
+        cat > package.xml <<'EOF'
+        <package format="3">
+          <name>test_ament_cmake_core</name>
+          <version>0.0.1</version>
+          <description>test</description>
+          <maintainer email="test@example.com">Test</maintainer>
+          <license>Apache-2.0</license>
+        </package>
+        EOF
+      - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.10)
         project(test_ament_cmake_core NONE)
         find_package(ament_cmake_core REQUIRED)
+        ament_package_xml()
         EOF
       - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
 

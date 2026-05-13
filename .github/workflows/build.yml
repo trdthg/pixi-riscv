@@ -75,10 +75,12 @@ jobs:
           order = {
               'recipes/pyparsing': 10,
               'recipes/setuptools': 12,
+              'recipes/lark': 13,
               'recipes/empy': 15,
               'recipes/catkin-pkg': 20,
               'recipes/ament-cmake-core': 30,
               'recipes/python-cmake-module': 350,
+              'recipes/rosidl-parser': 355,
               'recipes/rosidl-generator-c': 360,
               'recipes/rosidl-generator-cpp': 370,
               'recipes/rosidl-generator-py': 380,

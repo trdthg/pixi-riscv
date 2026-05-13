@@ -1,0 +1,51 @@
+context:
+  name: "lark"
+  version: "1.2.2"
+  git_rev: "acfe33d943a1310f3ca26145eb2896bc5c4955c9"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/lark-parser/lark.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES"
+    - cp -R lark "$SITE_PACKAGES/"
+    - mkdir -p "$SITE_PACKAGES/lark-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/lark-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: lark
+      Version: ${{ version }}
+      Summary: Parsing toolkit for Python
+      EOF
+
+# future requirements:
+#   build:
+#     - python
+#   run:
+#     - python
+
+tests:
+  - script:
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - PYTHONPATH="$SITE_PACKAGES" python3 -c "from lark import Lark; Lark('start: \"x\"'); print('lark ok')"
+
+about:
+  homepage: https://github.com/lark-parser/lark
+  repository: https://github.com/lark-parser/lark
+  summary: Parsing toolkit for Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -21,16 +21,16 @@ build:
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_generator_py" "$PREFIX/share/rosidl_generator_py/cmake" "$PREFIX/share/rosidl_generator_py/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages"
     - cp -R rosidl_generator_py "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/rosidl_generator_py/package.xml"
-    - cp bin/rosidl_generator_py "$PREFIX/lib/rosidl_generator_py/rosidl_generator_py.py"
+    - cp bin/rosidl_generator_py "$PREFIX/lib/rosidl_generator_py/_rosidl_generator_py_entry.py"
     - |
       cat > "$PREFIX/lib/rosidl_generator_py/rosidl_generator_py" <<'EOF'
       #!/usr/bin/env sh
       prefix="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
       site_packages="$(ROSIDL_GENERATOR_PREFIX="$prefix" python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["ROSIDL_GENERATOR_PREFIX"], "platbase": os.environ["ROSIDL_GENERATOR_PREFIX"]}))')"
       export PYTHONPATH="${site_packages}${PYTHONPATH:+:${PYTHONPATH}}"
-      exec python3 "$prefix/lib/rosidl_generator_py/rosidl_generator_py.py" "$@"
+      exec python3 "$prefix/lib/rosidl_generator_py/_rosidl_generator_py_entry.py" "$@"
       EOF
-    - chmod +x "$PREFIX/lib/rosidl_generator_py/rosidl_generator_py" "$PREFIX/lib/rosidl_generator_py/rosidl_generator_py.py"
+    - chmod +x "$PREFIX/lib/rosidl_generator_py/rosidl_generator_py" "$PREFIX/lib/rosidl_generator_py/_rosidl_generator_py_entry.py"
     - cp -R cmake "$PREFIX/share/rosidl_generator_py/"
     - cp -R resource "$PREFIX/share/rosidl_generator_py/"
     - |

@@ -105,7 +105,7 @@ Current policy:
   - XML parser dependency for FastDDS.
 - [x] `fastrtps`
   - FastDDS transport library dependency.
-- [ ] `fastrtps-cmake-module`
+- [x] `fastrtps-cmake-module`
   - CMake compatibility shim expected by ROS 2 Humble FastDDS packages.
 - [ ] `rosidl-typesupport-fastrtps-c`
 - [ ] `rosidl-typesupport-fastrtps-cpp`

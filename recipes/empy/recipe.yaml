@@ -1,0 +1,51 @@
+context:
+  name: "empy"
+  version: "3.3.4"
+  sha256: "73ac49785b601479df4ea18a7c79bc1304a8a7c34c02b9472cf1206ae88f01b3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/3b/95/88ed47cb7da88569a78b7d6fb9420298df7e99997810c844a924d96d3c08/empy-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/bin"
+    - cp em.py "$SITE_PACKAGES/"
+    - cp em.py "$PREFIX/bin/em.py"
+    - chmod +x "$PREFIX/bin/em.py"
+    - mkdir -p "$SITE_PACKAGES/empy-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/empy-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: empy
+      Version: ${{ version }}
+      Summary: A templating system for Python
+      EOF
+
+# future requirements:
+#   build:
+#     - python
+#   run:
+#     - python
+
+tests:
+  - script:
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - PYTHONPATH="$SITE_PACKAGES" python3 -c "import em; assert em.BUFFERED_OPT is True; print(em.__version__)"
+
+about:
+  homepage: http://www.alcyone.com/software/empy
+  summary: A templating system for Python
+  license: LGPL-3.0-or-later
+
+extra:
+  recipe-maintainers:
+    - trdthg

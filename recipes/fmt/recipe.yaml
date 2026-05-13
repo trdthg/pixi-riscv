@@ -1,0 +1,71 @@
+context:
+  name: "fmt"
+  version: "10.1.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/share/fmt/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - |
+      cat > "$PREFIX/share/fmt/cmake/fmtConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
+      find_path(fmt_INCLUDE_DIR fmt/format.h)
+      find_library(fmt_LIBRARY fmt)
+      if(NOT fmt_INCLUDE_DIR OR NOT fmt_LIBRARY)
+        message(FATAL_ERROR "system fmt headers/library not found")
+      endif()
+      if(NOT TARGET fmt::fmt)
+        add_library(fmt::fmt UNKNOWN IMPORTED)
+        set_target_properties(fmt::fmt PROPERTIES
+          IMPORTED_LOCATION "${fmt_LIBRARY}"
+          INTERFACE_INCLUDE_DIRECTORIES "${fmt_INCLUDE_DIR}"
+        )
+      endif()
+      set(fmt_FOUND TRUE)
+      set(fmt_INCLUDE_DIRS "${fmt_INCLUDE_DIR}")
+      set(fmt_LIBRARIES "${fmt_LIBRARY}")
+      EOF
+    - printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/fmt"
+
+# This bootstrap recipe intentionally uses the system fmt available on the
+# riscv runner. Enable these dependencies once the riscv channel has fmt.
+# requirements:
+#   build:
+#     - cxx-compiler
+#   run:
+#     - fmt
+
+tests:
+  - script:
+      - test -f $PREFIX/share/fmt/cmake/fmtConfig.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_fmt CXX)
+        find_package(fmt REQUIRED)
+        add_executable(test_fmt test_fmt.cpp)
+        target_link_libraries(test_fmt PRIVATE fmt::fmt)
+        EOF
+      - |
+        cat > test_fmt.cpp <<'EOF'
+        #include <fmt/format.h>
+        int main() {
+          return fmt::format("{}", 42) == "42" ? 0 : 1;
+        }
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_fmt
+
+about:
+  homepage: https://github.com/fmtlib/fmt
+  summary: CMake shim for system fmt
+  license: MIT
+
+extra:
+  recipe-maintainers:
+    - trdthg

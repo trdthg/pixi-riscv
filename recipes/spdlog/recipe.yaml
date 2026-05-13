@@ -13,6 +13,7 @@ build:
     - |
       cat > "$PREFIX/share/spdlog/cmake/spdlogConfig.cmake" <<'EOF'
       include_guard(GLOBAL)
+      find_package(fmt REQUIRED)
       find_path(spdlog_INCLUDE_DIR spdlog/spdlog.h)
       find_library(spdlog_LIBRARY spdlog)
       if(NOT spdlog_INCLUDE_DIR OR NOT spdlog_LIBRARY)
@@ -23,6 +24,7 @@ build:
         set_target_properties(spdlog::spdlog PROPERTIES
           IMPORTED_LOCATION "${spdlog_LIBRARY}"
           INTERFACE_INCLUDE_DIRECTORIES "${spdlog_INCLUDE_DIR}"
+          INTERFACE_LINK_LIBRARIES "fmt::fmt"
         )
       endif()
       set(spdlog_FOUND TRUE)
@@ -30,6 +32,12 @@ build:
       set(spdlog_LIBRARIES "${spdlog_LIBRARY}")
       EOF
     - printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/spdlog"
+
+requirements:
+  host:
+    - fmt
+  run:
+    - fmt
 
 # This bootstrap recipe intentionally uses the system spdlog available on the
 # riscv runner. Enable these dependencies once the riscv channel has spdlog.

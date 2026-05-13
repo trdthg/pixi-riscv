@@ -32,8 +32,10 @@ build:
 
 requirements:
   host:
+    - fmt
     - spdlog
   run:
+    - fmt
     - spdlog
 
 # future requirements:

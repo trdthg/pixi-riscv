@@ -24,6 +24,8 @@ requirements:
   build:
     - patchelf
   host:
+    - ament-cmake-gmock
+    - ament-cmake-gtest
     - ament-cmake-ros
     - fastcdr
     - fastrtps
@@ -36,6 +38,8 @@ requirements:
     - rosidl-typesupport-introspection-cpp
     - tracetools
   run:
+    - ament-cmake-gmock
+    - ament-cmake-gtest
     - ament-cmake-ros
     - fastcdr
     - fastrtps

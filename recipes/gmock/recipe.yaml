@@ -1,0 +1,72 @@
+context:
+  name: "gmock"
+  version: "1.12.1"
+  git_rev: "58d77fa8070e8cec2dc1ed015d66b454c8d78850"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/google/googletest.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON
+    - cmake --build build --target install -- -j"$(nproc)"
+    - mkdir -p "$PREFIX/share/gmock/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - |
+      cat > "$PREFIX/share/gmock/cmake/gmockConfig.cmake" <<'EOF'
+      find_package(GTest REQUIRED CONFIG)
+      set(gmock_FOUND TRUE)
+      set(gmock_LIBRARIES GTest::gmock)
+      set(gmock_MAIN_LIBRARIES GTest::gmock_main)
+      set(gmock_BOTH_LIBRARIES GTest::gmock GTest::gmock_main)
+      get_target_property(gmock_INCLUDE_DIRS GTest::gmock INTERFACE_INCLUDE_DIRECTORIES)
+      EOF
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/gmock"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - gtest
+  run:
+    - gtest
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libgmock.so
+      - test -f $PREFIX/lib/libgmock_main.so
+      - test -f $PREFIX/lib/cmake/GTest/GTestConfig.cmake
+      - test -f $PREFIX/share/gmock/cmake/gmockConfig.cmake
+      - |
+        cat > test_gmock.cpp <<'EOF'
+        #include <gmock/gmock.h>
+        TEST(Bootstrap, Basic) { EXPECT_THAT(1, testing::Eq(1)); }
+        EOF
+      - c++ -std=c++14 -I$PREFIX/include test_gmock.cpp -L$PREFIX/lib -lgmock -lgmock_main -lgtest -pthread -Wl,-rpath,$PREFIX/lib -o test_gmock
+      - ./test_gmock
+
+about:
+  homepage: https://github.com/google/googletest
+  repository: https://github.com/google/googletest
+  summary: GoogleMock C++ mocking framework
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

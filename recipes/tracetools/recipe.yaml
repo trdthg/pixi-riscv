@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include/tracetools" "$PREFIX/lib" "$PREFIX/lib/tracetools" "$PREFIX/share/tracetools/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -40,24 +40,29 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/tracetools"
     - |
       cat > "$PREFIX/share/tracetools/cmake/tracetoolsConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       include("${CMAKE_CURRENT_LIST_DIR}/tracetoolsTargets.cmake")
       set(tracetools_LIBRARIES tracetools::tracetools)
       set(tracetools_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
       EOF
     - |
       cat > "$PREFIX/share/tracetools/cmake/tracetoolsTargets.cmake" <<'EOF'
-      add_library(tracetools::tracetools SHARED IMPORTED)
-      set_target_properties(tracetools::tracetools PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libtracetools.so"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-        INTERFACE_COMPILE_DEFINITIONS "TRACETOOLS_DISABLED"
-      )
-      add_library(tracetools::tracetools_status SHARED IMPORTED)
-      set_target_properties(tracetools::tracetools_status PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libtracetools_status.so"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-        INTERFACE_LINK_LIBRARIES "tracetools::tracetools"
-      )
+      if(NOT TARGET tracetools::tracetools)
+        add_library(tracetools::tracetools SHARED IMPORTED)
+        set_target_properties(tracetools::tracetools PROPERTIES
+          IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libtracetools.so"
+          INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+          INTERFACE_COMPILE_DEFINITIONS "TRACETOOLS_DISABLED"
+        )
+      endif()
+      if(NOT TARGET tracetools::tracetools_status)
+        add_library(tracetools::tracetools_status SHARED IMPORTED)
+        set_target_properties(tracetools::tracetools_status PROPERTIES
+          IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/libtracetools_status.so"
+          INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+          INTERFACE_LINK_LIBRARIES "tracetools::tracetools"
+        )
+      endif()
       EOF
 
 # future requirements:
@@ -73,6 +78,14 @@ tests:
       - test -f $PREFIX/lib/libtracetools.so
       - test -f $PREFIX/lib/libtracetools_status.so
       - test -x $PREFIX/lib/tracetools/status
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_tracetools_config C)
+        find_package(tracetools REQUIRED)
+        find_package(tracetools REQUIRED)
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         cat > test_tracetools.c <<'EOF'
         #include <stdbool.h>

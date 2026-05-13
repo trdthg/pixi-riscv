@@ -14,12 +14,12 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-    - mkdir -p "$SITE_PACKAGES" "$PREFIX/include" "$PREFIX/lib/${{ ros_name }}" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp"
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/include" "$PREFIX/lib/${{ ros_name }}" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/resource" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R include/${{ ros_name }} "$PREFIX/include/"
     - cp -R ${{ ros_name }} "$SITE_PACKAGES/"
     - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
@@ -53,9 +53,8 @@ build:
     - |
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
     - |
-      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp/${{ ros_name }}"
-    - |
       cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_cppConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       find_package(rcutils REQUIRED)
       find_package(rcpputils REQUIRED)
       find_package(rosidl_runtime_c REQUIRED)
@@ -113,7 +112,7 @@ tests:
       - test -f $PREFIX/lib/librosidl_typesupport_cpp.so
       - test -f $PREFIX/include/rosidl_typesupport_cpp/identifier.hpp
       - test -x $PREFIX/lib/rosidl_typesupport_cpp/rosidl_typesupport_cpp
-      - test -f $PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp/rosidl_typesupport_cpp
+      - test ! -e $PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp/rosidl_typesupport_cpp
       - |
         cat > test_typesupport_cpp.cpp <<'EOF'
         #include <cstring>

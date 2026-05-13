@@ -106,7 +106,7 @@ Current policy:
 - [x] `rmw-fastrtps-cpp`
   - Alternative path if matching the existing source build path is more practical.
 - [x] `rmw-fastrtps-shared-cpp`
-- [ ] `rmw-fastrtps-dynamic-cpp`
+- [x] `rmw-fastrtps-dynamic-cpp`
 - [x] `fastcdr`
   - FastDDS serialization dependency.
 - [x] `foonathan-memory`

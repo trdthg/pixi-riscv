@@ -14,7 +14,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - cd ${{ source_dir }}
     - |

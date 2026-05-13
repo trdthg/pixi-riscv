@@ -140,9 +140,9 @@ Current policy:
 - [x] `rcl-action`
 - [x] `rcl-lifecycle`
 - [x] `rclpy`
-- [ ] `libstatistics-collector`
+- [x] `libstatistics-collector`
   - Required by `rclcpp`.
-- [ ] `rclcpp`
+- [x] `rclcpp`
   - C++ client library added as an optional extension beyond the Python control endpoint.
 
 ## P7: Control Endpoint Applications

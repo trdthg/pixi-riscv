@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/share/ament_cmake_target_dependencies/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -24,10 +24,21 @@ build:
     - for file in *-extras.cmake; do [ -f "$file" ] && cp "$file" "$PREFIX/share/ament_cmake_target_dependencies/cmake/"; done
     - |
       cat > "$PREFIX/share/ament_cmake_target_dependencies/cmake/ament_cmake_target_dependenciesConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       include("${CMAKE_CURRENT_LIST_DIR}/ament_cmake_target_dependencies-extras.cmake")
       EOF
 
-# requirements:
+requirements:
+  host:
+    - ament-cmake-core
+    - ament-cmake-include-directories
+    - ament-cmake-libraries
+  run:
+    - ament-cmake-core
+    - ament-cmake-include-directories
+    - ament-cmake-libraries
+
+# future requirements:
 #   build:
 #     - cmake
 
@@ -36,6 +47,16 @@ tests:
       - test -f $PREFIX/share/ament_cmake_target_dependencies/package.xml
       - test -f $PREFIX/share/ament_index/resource_index/packages/ament_cmake_target_dependencies
       - test -f $PREFIX/share/ament_cmake_target_dependencies/cmake/ament_cmake_target_dependenciesConfig.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_ament_cmake_target_dependencies NONE)
+        find_package(ament_cmake_target_dependencies REQUIRED)
+        if(NOT COMMAND ament_target_dependencies)
+          message(FATAL_ERROR "ament_target_dependencies was not exported")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
 
 about:
   homepage: https://github.com/ament/ament_cmake

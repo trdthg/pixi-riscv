@@ -20,7 +20,7 @@ Current policy:
   - Provides the early Python metadata helper used by the ament build system.
 - [x] `pyparsing`
   - Provides the pure-Python parser dependency used by `catkin-pkg`.
-- [ ] `empy`
+- [x] `empy`
   - Provides the `em` Python module used by `rosidl_adapter` templates. Use the ROS 2 Humble-compatible 3.x API.
 - [x] `catkin-pkg`
   - Provides the package manifest parser required by `ament-cmake-core`.

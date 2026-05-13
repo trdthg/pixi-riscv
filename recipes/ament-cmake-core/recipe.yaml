@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/share/ament_cmake_core/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -24,6 +24,7 @@ build:
     - for file in *-extras.cmake; do [ -f "$file" ] && cp "$file" "$PREFIX/share/ament_cmake_core/cmake/"; done
     - |
       cat > "$PREFIX/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       get_filename_component(_ament_cmake_core_prefix "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
       find_package(Python3 REQUIRED COMPONENTS Interpreter)
       execute_process(

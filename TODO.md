@@ -108,7 +108,7 @@ Current policy:
 - [x] `fastrtps-cmake-module`
   - CMake compatibility shim expected by ROS 2 Humble FastDDS packages.
 - [ ] `rosidl-typesupport-fastrtps-c`
-- [ ] `rosidl-typesupport-fastrtps-cpp`
+- [x] `rosidl-typesupport-fastrtps-cpp`
 
 ## P6: rcl / Python Client Library
 

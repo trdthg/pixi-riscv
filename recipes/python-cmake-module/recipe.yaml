@@ -2,7 +2,7 @@ context:
   name: "python-cmake-module"
   ros_name: "python_cmake_module"
   version: "0.10.0"
-  git_rev: "8591154b8bf29e5895a0c65bf02b5e29c994fae5"
+  git_rev: "859115408416e77d37711912d5c36cd3147fe136"
 
 package:
   name: ${{ name }}

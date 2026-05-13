@@ -14,7 +14,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 3
+  number: 4
   script:
     - cd ${{ source_dir }}
     - |
@@ -51,8 +51,8 @@ tests:
   - script:
       - test -f $PREFIX/share/builtin_interfaces/msg/Time.msg
       - test -f $PREFIX/share/builtin_interfaces/msg/Time.idl
-      - test -f $PREFIX/include/builtin_interfaces/msg/time.h
-      - test -f $PREFIX/include/builtin_interfaces/msg/time.hpp
+      - test -f $PREFIX/include/builtin_interfaces/builtin_interfaces/msg/time.h
+      - test -f $PREFIX/include/builtin_interfaces/builtin_interfaces/msg/time.hpp
       - test -f $PREFIX/lib/libbuiltin_interfaces__rosidl_generator_c.so
       - test -f $PREFIX/lib/libbuiltin_interfaces__rosidl_typesupport_c.so
       - test -f $PREFIX/lib/libbuiltin_interfaces__rosidl_typesupport_cpp.so
@@ -79,7 +79,7 @@ tests:
           return msg.sec == 1 && msg.nanosec == 2u ? 0 : 1;
         }
         EOF
-      - c++ -std=c++14 -I$PREFIX/include test_builtin_interfaces.cpp -o test_builtin_interfaces
+      - c++ -std=c++14 -I$PREFIX/include -I$PREFIX/include/builtin_interfaces test_builtin_interfaces.cpp -o test_builtin_interfaces
       - ./test_builtin_interfaces
 
 about:

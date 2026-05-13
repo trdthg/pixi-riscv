@@ -2,7 +2,7 @@ context:
   name: "type-description-interfaces"
   ros_name: "type_description_interfaces"
   version: "2.0.0"
-  git_rev: "2b5900959a8969e52f344ed3495d9d36eeb1a28d"
+  git_rev: "fa5d52c30e32d3ab5a85b7fbb36c8a75280e4c9b"
   source_dir: "type_description_interfaces"
 
 package:

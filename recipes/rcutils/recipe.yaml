@@ -12,10 +12,14 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rcutils/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R include/rcutils "$PREFIX/include/"
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      mkdir -p "$SITE_PACKAGES"
+      cp -R rcutils "$SITE_PACKAGES/"
     - |
       cat > "$PREFIX/include/rcutils/logging_macros.h" <<'EOF'
       #ifndef RCUTILS__LOGGING_MACROS_H_
@@ -117,6 +121,13 @@ tests:
       - test -f $PREFIX/lib/librcutils.so
       - test -f $PREFIX/include/rcutils/allocator.h
       - test -f $PREFIX/share/ament_index/resource_index/packages/rcutils
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+        PYTHONPATH="$SITE_PACKAGES" python3 - <<'PY'
+        from rcutils.logging import get_suffix_from_features
+        assert get_suffix_from_features(('once', 'named')) == '_ONCE_NAMED'
+        print('rcutils python ok')
+        PY
       - |
         cat > test_rcutils.c <<'EOF'
         #include <rcutils/allocator.h>

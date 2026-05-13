@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - cd ${{ source_dir }}
     - |
@@ -24,11 +24,20 @@ build:
     - cp bin/rosidl_generator_c "$PREFIX/lib/rosidl_generator_c/_rosidl_generator_c_entry.py"
     - |
       cat > "$PREFIX/lib/rosidl_generator_c/rosidl_generator_c" <<'EOF'
-      #!/usr/bin/env sh
-      prefix="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-      site_packages="$(ROSIDL_GENERATOR_PREFIX="$prefix" python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["ROSIDL_GENERATOR_PREFIX"], "platbase": os.environ["ROSIDL_GENERATOR_PREFIX"]}))')"
-      export PYTHONPATH="${site_packages}${PYTHONPATH:+:${PYTHONPATH}}"
-      exec python3 "$prefix/lib/rosidl_generator_c/_rosidl_generator_c_entry.py" "$@"
+      #!/usr/bin/env python3
+      import os
+      import runpy
+      import sys
+      import sysconfig
+
+      prefix = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+      site_packages = sysconfig.get_path(
+          'purelib', scheme='posix_prefix',
+          vars={'base': prefix, 'platbase': prefix})
+      sys.path.insert(0, site_packages)
+      entry = os.path.join(prefix, 'lib', 'rosidl_generator_c', '_rosidl_generator_c_entry.py')
+      sys.argv[0] = entry
+      runpy.run_path(entry, run_name='__main__')
       EOF
     - chmod +x "$PREFIX/lib/rosidl_generator_c/rosidl_generator_c" "$PREFIX/lib/rosidl_generator_c/_rosidl_generator_c_entry.py"
     - cp -R cmake "$PREFIX/share/rosidl_generator_c/"

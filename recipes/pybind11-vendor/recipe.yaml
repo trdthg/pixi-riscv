@@ -1,0 +1,62 @@
+context:
+  name: "pybind11-vendor"
+  ros_name: "pybind11_vendor"
+  version: "2.4.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/package.xml" <<'EOF'
+      <?xml version="1.0"?>
+      <package format="3">
+        <name>pybind11_vendor</name>
+        <version>${{ version }}</version>
+        <description>Vendor shim for pybind11.</description>
+        <maintainer email="noreply@example.com">pixi-riscv</maintainer>
+        <license>Apache-2.0</license>
+        <export><build_type>ament_cmake</build_type></export>
+      </package>
+      EOF
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/pybind11_vendorConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
+      find_package(pybind11 REQUIRED)
+      EOF
+    - printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+
+requirements:
+  host:
+    - pybind11
+  run:
+    - pybind11
+
+# future requirements:
+#   build:
+#     - cmake
+
+tests:
+  - script:
+      - test -f $PREFIX/share/${{ ros_name }}/cmake/pybind11_vendorConfig.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_pybind11_vendor CXX)
+        find_package(pybind11_vendor REQUIRED)
+        find_package(pybind11 REQUIRED)
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/pybind11_vendor
+  summary: ROS vendor shim for pybind11
+  license: Apache-2.0
+
+extra:
+  recipe-maintainers:
+    - trdthg

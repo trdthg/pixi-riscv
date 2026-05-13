@@ -136,6 +136,8 @@ jobs:
               'recipes/rcl': 770,
               'recipes/rcl-action': 780,
               'recipes/rcl-lifecycle': 790,
+              'recipes/pybind11-vendor': 800,
+              'recipes/rclpy': 810,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

@@ -1,0 +1,104 @@
+context:
+  name: "rclpy"
+  version: "3.3.21"
+  git_rev: "643f53c82069f4530d414d60a33a8652ae52c9f0"
+  source_dir: "rclpy"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rclpy.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake
+    - ament-cmake-python
+    - ament-index-python
+    - builtin-interfaces
+    - lifecycle-msgs
+    - pybind11
+    - pybind11-vendor
+    - python-cmake-module
+    - rcl
+    - rcl-action
+    - rcl-interfaces
+    - rcl-lifecycle
+    - rcl-logging-interface
+    - rcl-yaml-param-parser
+    - rcpputils
+    - rcutils
+    - rmw
+    - rmw-implementation
+    - rmw-implementation-cmake
+    - rosgraph-msgs
+    - rosidl-runtime-c
+    - rpyutils
+    - unique-identifier-msgs
+  run:
+    - ament-index-python
+    - builtin-interfaces
+    - lifecycle-msgs
+    - rcl
+    - rcl-action
+    - rcl-interfaces
+    - rcl-lifecycle
+    - rcl-logging-interface
+    - rcl-yaml-param-parser
+    - rcpputils
+    - rcutils
+    - rmw
+    - rmw-implementation
+    - rosgraph-msgs
+    - rosidl-runtime-c
+    - rpyutils
+    - unique-identifier-msgs
+
+# This recipe intentionally uses host cmake, compiler, and Python on the native
+# riscv runner. Enable these dependencies once the riscv channel has Python.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   host:
+#     - python
+#     - python-dev
+#   run:
+#     - libstdcxx
+#     - python
+
+tests:
+  - script:
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+        PYTHONPATH="$SITE_PACKAGES" python3 - <<'PY'
+        import rclpy
+        import rclpy.impl.implementation_singleton as singleton
+        assert singleton.rclpy_implementation
+        print("rclpy ok")
+        PY
+      - test -f $PREFIX/share/rclpy/package.xml
+
+about:
+  homepage: https://github.com/ros2/rclpy
+  repository: https://github.com/ros2/rclpy
+  summary: Python client library for ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

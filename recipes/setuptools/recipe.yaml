@@ -1,0 +1,51 @@
+context:
+  name: "setuptools"
+  version: "80.9.0"
+  git_rev: "ef921af5f4374a66c018304a2aa5306cb67962a0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/pypa/setuptools.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES"
+    - cp -R setuptools pkg_resources _distutils_hack "$SITE_PACKAGES/"
+    - mkdir -p "$SITE_PACKAGES/setuptools-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/setuptools-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: setuptools
+      Version: ${{ version }}
+      Summary: Easily download, build, install, upgrade, and uninstall Python packages
+      EOF
+
+# future requirements:
+#   build:
+#     - python
+#   run:
+#     - python
+
+tests:
+  - script:
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - PYTHONPATH="$SITE_PACKAGES" python3 -c "from setuptools import find_packages, setup; import pkg_resources; print('setuptools ok')"
+
+about:
+  homepage: https://github.com/pypa/setuptools
+  repository: https://github.com/pypa/setuptools
+  summary: Python package build and install helpers
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

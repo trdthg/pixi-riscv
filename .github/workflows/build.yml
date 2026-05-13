@@ -74,6 +74,7 @@ jobs:
           from pathlib import Path
           order = {
               'recipes/pyparsing': 10,
+              'recipes/setuptools': 12,
               'recipes/empy': 15,
               'recipes/catkin-pkg': 20,
               'recipes/ament-cmake-core': 30,

@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - |
@@ -21,8 +21,16 @@ build:
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_generator_cpp" "$PREFIX/share/rosidl_generator_cpp/cmake" "$PREFIX/share/rosidl_generator_cpp/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages"
     - cp -R rosidl_generator_cpp "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/rosidl_generator_cpp/package.xml"
-    - cp bin/rosidl_generator_cpp "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp"
-    - chmod +x "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp"
+    - cp bin/rosidl_generator_cpp "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp.py"
+    - |
+      cat > "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp" <<'EOF'
+      #!/usr/bin/env sh
+      prefix="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+      site_packages="$(ROSIDL_GENERATOR_PREFIX="$prefix" python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["ROSIDL_GENERATOR_PREFIX"], "platbase": os.environ["ROSIDL_GENERATOR_PREFIX"]}))')"
+      export PYTHONPATH="${site_packages}${PYTHONPATH:+:${PYTHONPATH}}"
+      exec python3 "$prefix/lib/rosidl_generator_cpp/rosidl_generator_cpp.py" "$@"
+      EOF
+    - chmod +x "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp" "$PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp.py"
     - cp -R cmake "$PREFIX/share/rosidl_generator_cpp/"
     - cp -R resource "$PREFIX/share/rosidl_generator_cpp/"
     - |
@@ -75,6 +83,7 @@ tests:
   - script:
       - test -f $PREFIX/share/rosidl_generator_cpp/package.xml
       - test -x $PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp
+      - $PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp --help >/dev/null
       - test -f $PREFIX/share/rosidl_generator_cpp/cmake/rosidl_generator_cppConfig.cmake
 
 # future requirements:

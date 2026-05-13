@@ -26,6 +26,7 @@ requirements:
   host:
     - ament-cmake
     - rosidl-default-generators
+    - setuptools
   run:
     - ament-cmake
     - rosidl-default-runtime

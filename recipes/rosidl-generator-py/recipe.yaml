@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - cd ${{ source_dir }}
     - |
@@ -48,6 +48,7 @@ build:
     - |
       cat > "$PREFIX/share/rosidl_generator_py/cmake/rosidl_generator_pyConfig.cmake" <<'EOF'
       include_guard(GLOBAL)
+      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_generator_py_get_typesupports.cmake")
       include("${CMAKE_CURRENT_LIST_DIR}/rosidl_generator_py-extras.cmake")
       EOF
 

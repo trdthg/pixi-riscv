@@ -24,6 +24,8 @@ Current policy:
   - Provides `find_packages` and setup helpers required by generated ament Python install steps.
 - [x] `lark`
   - Provides the parser backend required by `rosidl-parser`.
+- [ ] `rpyutils`
+  - Provides Python runtime utilities used by `rosidl-generator-py`.
 - [x] `empy`
   - Provides the `em` Python module used by `rosidl_adapter` templates. Use the ROS 2 Humble-compatible 3.x API.
 - [x] `catkin-pkg`

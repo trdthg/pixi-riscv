@@ -1,0 +1,55 @@
+context:
+  name: "rpyutils"
+  version: "0.2.1"
+  git_rev: "4cb9e1b5c1c4c585694196377ab918e7e70639f0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rpyutils.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/rpyutils" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp -R rpyutils "$SITE_PACKAGES/"
+    - cp package.xml "$PREFIX/share/rpyutils/package.xml"
+    - cp resource/rpyutils "$PREFIX/share/ament_index/resource_index/packages/rpyutils"
+    - mkdir -p "$SITE_PACKAGES/rpyutils-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/rpyutils-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: rpyutils
+      Version: ${{ version }}
+      Summary: Python utility helpers used by ROS 2
+      EOF
+
+# future requirements:
+#   build:
+#     - python
+#   run:
+#     - python
+
+tests:
+  - script:
+      - |
+        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - PYTHONPATH="$SITE_PACKAGES" python3 -c "from rpyutils import add_dll_directories_from_env; print('rpyutils ok')"
+      - test -f $PREFIX/share/rpyutils/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rpyutils
+
+about:
+  homepage: https://github.com/ros2/rpyutils
+  repository: https://github.com/ros2/rpyutils
+  summary: Python utility helpers used by ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

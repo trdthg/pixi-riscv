@@ -76,6 +76,7 @@ jobs:
               'recipes/pyparsing': 10,
               'recipes/setuptools': 12,
               'recipes/lark': 13,
+              'recipes/rpyutils': 14,
               'recipes/empy': 15,
               'recipes/catkin-pkg': 20,
               'recipes/ament-cmake-core': 30,

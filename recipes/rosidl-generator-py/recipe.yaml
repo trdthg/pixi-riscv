@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 4
+  number: 5
   script:
     - cd ${{ source_dir }}
     - |
@@ -70,6 +70,7 @@ requirements:
     - rosidl-runtime-c
     - rosidl-runtime-py
     - rosidl-typesupport-interface
+    - rpyutils
   run:
     - ament-index-python
     - python-cmake-module
@@ -79,6 +80,7 @@ requirements:
     - rosidl-runtime-c
     - rosidl-runtime-py
     - rosidl-typesupport-interface
+    - rpyutils
 
 tests:
   - script:
@@ -92,7 +94,6 @@ tests:
 # future requirements:
 #   run:
 #     - numpy
-#     - rpyutils
 #     - rosidl-typesupport-c
 
 about:

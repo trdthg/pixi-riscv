@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include" "$PREFIX/share/rosidl_runtime_cpp/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages"
@@ -26,11 +26,15 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/rosidl_runtime_cpp"
     - |
       cat > "$PREFIX/share/rosidl_runtime_cpp/cmake/rosidl_runtime_cppConfig.cmake" <<'EOF'
-      add_library(rosidl_runtime_cpp::rosidl_runtime_cpp INTERFACE IMPORTED)
-      set_target_properties(rosidl_runtime_cpp::rosidl_runtime_cpp PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-        INTERFACE_LINK_LIBRARIES "rosidl_runtime_c::rosidl_runtime_c"
-      )
+      include_guard(GLOBAL)
+      find_package(rosidl_runtime_c REQUIRED)
+      if(NOT TARGET rosidl_runtime_cpp::rosidl_runtime_cpp)
+        add_library(rosidl_runtime_cpp::rosidl_runtime_cpp INTERFACE IMPORTED)
+        set_target_properties(rosidl_runtime_cpp::rosidl_runtime_cpp PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+          INTERFACE_LINK_LIBRARIES "rosidl_runtime_c::rosidl_runtime_c"
+        )
+      endif()
       set(rosidl_runtime_cpp_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
       EOF
 

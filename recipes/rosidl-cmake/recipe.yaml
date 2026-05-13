@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - |
@@ -29,8 +29,15 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rosidl_cmake"
     - |
       cat > "$PREFIX/share/rosidl_cmake/cmake/rosidl_cmakeConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       include("${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
       EOF
+
+requirements:
+  host:
+    - rosidl-adapter
+  run:
+    - rosidl-adapter
 
 tests:
   - script:

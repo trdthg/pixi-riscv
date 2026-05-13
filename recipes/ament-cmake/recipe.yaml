@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/share/ament_cmake/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -23,9 +23,54 @@ build:
     - if [ -d cmake ]; then cp -R cmake "$PREFIX/share/ament_cmake/"; fi
     - for file in *-extras.cmake; do [ -f "$file" ] && cp "$file" "$PREFIX/share/ament_cmake/cmake/"; done
     - |
-      touch "$PREFIX/share/ament_cmake/cmake/ament_cmakeConfig.cmake"
+      cat > "$PREFIX/share/ament_cmake/cmake/ament_cmakeConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
+      find_package(ament_cmake_core REQUIRED)
+      find_package(ament_cmake_export_definitions REQUIRED)
+      find_package(ament_cmake_export_dependencies REQUIRED)
+      find_package(ament_cmake_export_include_directories REQUIRED)
+      find_package(ament_cmake_export_interfaces REQUIRED)
+      find_package(ament_cmake_export_libraries REQUIRED)
+      find_package(ament_cmake_export_link_flags REQUIRED)
+      find_package(ament_cmake_export_targets REQUIRED)
+      find_package(ament_cmake_gen_version_h REQUIRED)
+      find_package(ament_cmake_libraries REQUIRED)
+      find_package(ament_cmake_python REQUIRED)
+      find_package(ament_cmake_target_dependencies REQUIRED)
+      find_package(ament_cmake_test REQUIRED)
+      EOF
 
-# requirements:
+requirements:
+  host:
+    - ament-cmake-core
+    - ament-cmake-export-definitions
+    - ament-cmake-export-dependencies
+    - ament-cmake-export-include-directories
+    - ament-cmake-export-interfaces
+    - ament-cmake-export-libraries
+    - ament-cmake-export-link-flags
+    - ament-cmake-export-targets
+    - ament-cmake-gen-version-h
+    - ament-cmake-libraries
+    - ament-cmake-python
+    - ament-cmake-target-dependencies
+    - ament-cmake-test
+  run:
+    - ament-cmake-core
+    - ament-cmake-export-definitions
+    - ament-cmake-export-dependencies
+    - ament-cmake-export-include-directories
+    - ament-cmake-export-interfaces
+    - ament-cmake-export-libraries
+    - ament-cmake-export-link-flags
+    - ament-cmake-export-targets
+    - ament-cmake-gen-version-h
+    - ament-cmake-libraries
+    - ament-cmake-python
+    - ament-cmake-target-dependencies
+    - ament-cmake-test
+
+# future requirements:
 #   build:
 #     - cmake
 
@@ -34,6 +79,16 @@ tests:
       - test -f $PREFIX/share/ament_cmake/package.xml
       - test -f $PREFIX/share/ament_index/resource_index/packages/ament_cmake
       - test -f $PREFIX/share/ament_cmake/cmake/ament_cmakeConfig.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_ament_cmake NONE)
+        find_package(ament_cmake REQUIRED)
+        if(NOT COMMAND ament_target_dependencies)
+          message(FATAL_ERROR "ament_target_dependencies was not exported")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX -DBUILD_TESTING=OFF
 
 about:
   homepage: https://github.com/ament/ament_cmake

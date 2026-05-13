@@ -14,7 +14,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - |
@@ -58,6 +58,7 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages/${{ ros_name }}"
     - |
       cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_introspection_cppConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       find_package(ament_cmake_core REQUIRED)
       find_package(rosidl_cmake REQUIRED)
       find_package(rosidl_runtime_c REQUIRED)
@@ -72,12 +73,14 @@ build:
       EOF
     - |
       cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_typesupport_introspection_cppTargets.cmake" <<'EOF'
-      add_library(rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp SHARED IMPORTED)
-      set_target_properties(rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librosidl_typesupport_introspection_cpp.so"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-        INTERFACE_LINK_LIBRARIES "rosidl_typesupport_introspection_c::rosidl_typesupport_introspection_c;rosidl_runtime_c::rosidl_runtime_c;rosidl_runtime_cpp::rosidl_runtime_cpp"
-      )
+      if(NOT TARGET rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp)
+        add_library(rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp SHARED IMPORTED)
+        set_target_properties(rosidl_typesupport_introspection_cpp::rosidl_typesupport_introspection_cpp PROPERTIES
+          IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librosidl_typesupport_introspection_cpp.so"
+          INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+          INTERFACE_LINK_LIBRARIES "rosidl_typesupport_introspection_c::rosidl_typesupport_introspection_c;rosidl_runtime_c::rosidl_runtime_c;rosidl_runtime_cpp::rosidl_runtime_cpp"
+        )
+      endif()
       EOF
 
 requirements:

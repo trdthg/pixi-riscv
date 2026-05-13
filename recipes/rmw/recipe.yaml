@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rmw/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -53,6 +53,7 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rmw"
     - |
       cat > "$PREFIX/share/rmw/cmake/rmwConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       find_package(rcutils REQUIRED)
       find_package(rosidl_runtime_c REQUIRED)
       include("${CMAKE_CURRENT_LIST_DIR}/rmwTargets.cmake")
@@ -62,12 +63,14 @@ build:
       EOF
     - |
       cat > "$PREFIX/share/rmw/cmake/rmwTargets.cmake" <<'EOF'
-      add_library(rmw::rmw SHARED IMPORTED)
-      set_target_properties(rmw::rmw PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librmw.so"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-        INTERFACE_LINK_LIBRARIES "rcutils::rcutils;rosidl_runtime_c::rosidl_runtime_c"
-      )
+      if(NOT TARGET rmw::rmw)
+        add_library(rmw::rmw SHARED IMPORTED)
+        set_target_properties(rmw::rmw PROPERTIES
+          IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librmw.so"
+          INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
+          INTERFACE_LINK_LIBRARIES "rcutils::rcutils;rosidl_runtime_c::rosidl_runtime_c"
+        )
+      endif()
       EOF
 
 requirements:

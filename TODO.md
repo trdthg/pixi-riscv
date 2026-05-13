@@ -68,6 +68,8 @@ Current policy:
 - [x] `rosidl-generator-cpp`
 - [x] `rosidl-generator-py`
 - [x] `rosidl-typesupport-interface`
+- [x] `rosidl-default-generators`
+- [x] `rosidl-default-runtime`
 
 ## P3: Low-Level Runtime
 

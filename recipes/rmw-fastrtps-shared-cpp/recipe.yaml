@@ -1,0 +1,83 @@
+context:
+  name: "rmw-fastrtps-shared-cpp"
+  ros_name: "rmw_fastrtps_shared_cpp"
+  version: "6.2.7"
+  git_rev: "37f7ef88fbec216d47883763f185bd39fc50b5a1"
+  source_dir: "rmw_fastrtps_shared_cpp"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rmw_fastrtps.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake-ros
+    - fastcdr
+    - fastrtps
+    - fastrtps-cmake-module
+    - rcpputils
+    - rcutils
+    - rmw
+    - rmw-dds-common
+    - rosidl-typesupport-introspection-c
+    - rosidl-typesupport-introspection-cpp
+    - tracetools
+  run:
+    - ament-cmake-ros
+    - fastcdr
+    - fastrtps
+    - fastrtps-cmake-module
+    - rcpputils
+    - rcutils
+    - rmw
+    - rmw-dds-common
+    - rosidl-typesupport-introspection-c
+    - rosidl-typesupport-introspection-cpp
+    - tracetools
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librmw_fastrtps_shared_cpp.so
+      - test -f $PREFIX/include/rmw_fastrtps_shared_cpp/rmw_fastrtps_shared_cpp/visibility_control.h
+      - test -f $PREFIX/share/rmw_fastrtps_shared_cpp/package.xml
+      - test -f $PREFIX/share/ament_index/resource_index/packages/rmw_fastrtps_shared_cpp
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_rmw_fastrtps_shared_cpp CXX)
+        find_package(rmw_fastrtps_shared_cpp REQUIRED)
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/rmw_fastrtps
+  repository: https://github.com/ros2/rmw_fastrtps
+  summary: Shared C++ implementation code for ROS 2 Fast DDS RMW packages
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

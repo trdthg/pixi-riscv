@@ -103,7 +103,7 @@ Current policy:
 - [x] `rmw-dds-common`
 - [ ] `rmw-cyclonedds-cpp`
   - Preferred first RMW candidate if dependencies are manageable.
-- [ ] `rmw-fastrtps-cpp`
+- [x] `rmw-fastrtps-cpp`
   - Alternative path if matching the existing source build path is more practical.
 - [x] `rmw-fastrtps-shared-cpp`
 - [ ] `rmw-fastrtps-dynamic-cpp`

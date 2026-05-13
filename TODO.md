@@ -72,7 +72,7 @@ Current policy:
 - [x] `rosidl-typesupport-interface`
 - [x] `rosidl-default-generators`
 - [x] `rosidl-default-runtime`
-- [ ] `python-cmake-module`
+- [x] `python-cmake-module`
   - Required by `rosidl-generator-py` during real interface generation.
 
 ## P3: Low-Level Runtime

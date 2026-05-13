@@ -126,6 +126,12 @@ jobs:
               'recipes/rmw-fastrtps-shared-cpp': 640,
               'recipes/rmw-fastrtps-cpp': 650,
               'recipes/rmw-fastrtps-dynamic-cpp': 660,
+              'recipes/yaml': 700,
+              'recipes/rcl-yaml-param-parser': 710,
+              'recipes/rcl-logging-interface': 720,
+              'recipes/spdlog': 730,
+              'recipes/spdlog-vendor': 740,
+              'recipes/rcl-logging-spdlog': 750,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

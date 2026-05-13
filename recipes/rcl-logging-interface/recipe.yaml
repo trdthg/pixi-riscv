@@ -1,0 +1,81 @@
+context:
+  name: "rcl-logging-interface"
+  ros_name: "rcl_logging_interface"
+  version: "2.3.1"
+  git_rev: "1b7a4e34884005f28eeb04065b5d94565c67b11d"
+  source_dir: "rcl_logging_interface"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcl_logging.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake-ros
+    - rcutils
+  run:
+    - ament-cmake-ros
+    - rcutils
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libgcc
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/lib${{ ros_name }}.so
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/rcl_logging_interface.h
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_rcl_logging_interface C)
+        find_package(rcl_logging_interface REQUIRED)
+        add_executable(test_rcl_logging_interface test_rcl_logging_interface.c)
+        target_link_libraries(test_rcl_logging_interface PRIVATE rcl_logging_interface::rcl_logging_interface)
+        EOF
+      - |
+        cat > test_rcl_logging_interface.c <<'EOF'
+        #include <rcl_logging_interface/rcl_logging_interface.h>
+        int main(void) {
+          rcutils_allocator_t allocator = rcutils_get_default_allocator();
+          char * directory = 0;
+          rcl_logging_ret_t ret = rcl_logging_get_logging_directory(allocator, &directory);
+          if (directory) {
+            allocator.deallocate(directory, allocator.state);
+          }
+          return ret == RCL_LOGGING_RET_OK ? 0 : 1;
+        }
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_rcl_logging_interface
+
+about:
+  homepage: https://github.com/ros2/rcl_logging
+  repository: https://github.com/ros2/rcl_logging
+  summary: rcl logging backend interface
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

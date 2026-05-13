@@ -1,0 +1,87 @@
+context:
+  name: "rcl-yaml-param-parser"
+  ros_name: "rcl_yaml_param_parser"
+  version: "6.1.1"
+  git_rev: "627d7c66fb024b2ac46fb8cacf7b12db06fb3738"
+  source_dir: "rcl_yaml_param_parser"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake-ros
+    - libyaml-vendor
+    - rcutils
+    - rmw
+    - yaml
+  run:
+    - ament-cmake-ros
+    - libyaml-vendor
+    - rcutils
+    - rmw
+    - yaml
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libgcc
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/lib${{ ros_name }}.so
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/parser.h
+      - test -f $PREFIX/share/${{ ros_name }}/cmake/${{ ros_name }}Config.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_rcl_yaml_param_parser C)
+        find_package(rcl_yaml_param_parser REQUIRED)
+        add_executable(test_rcl_yaml_param_parser test_rcl_yaml_param_parser.c)
+        target_link_libraries(test_rcl_yaml_param_parser PRIVATE rcl_yaml_param_parser::rcl_yaml_param_parser)
+        EOF
+      - |
+        cat > test_rcl_yaml_param_parser.c <<'EOF'
+        #include <rcl_yaml_param_parser/parser.h>
+        int main(void) {
+          rcl_params_t * params = rcl_yaml_node_struct_init(rcutils_get_default_allocator());
+          if (!params) {
+            return 1;
+          }
+          rcl_yaml_node_struct_fini(params);
+          return 0;
+        }
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_rcl_yaml_param_parser
+
+about:
+  homepage: https://github.com/ros2/rcl
+  repository: https://github.com/ros2/rcl
+  summary: YAML parameter parser for rcl
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

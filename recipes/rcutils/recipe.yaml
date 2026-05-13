@@ -12,7 +12,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rcutils/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R include/rcutils "$PREFIX/include/"
@@ -55,11 +55,17 @@ build:
       #define RCUTILS_LOG(severity, ...) RCUTILS_LOG_NAMED(severity, NULL, __VA_ARGS__)
       #define RCUTILS_LOG_ONCE(severity, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_ONCE_BEFORE, RCUTILS_LOG_CONDITION_ONCE_AFTER, NULL, __VA_ARGS__)
       #define RCUTILS_LOG_EXPRESSION(severity, expression, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression), RCUTILS_LOG_CONDITION_EXPRESSION_AFTER, NULL, __VA_ARGS__)
+      #define RCUTILS_LOG_EXPRESSION_NAMED(severity, expression, name, ...) RCUTILS_LOG_COND_NAMED(severity, RCUTILS_LOG_CONDITION_EXPRESSION_BEFORE(expression), RCUTILS_LOG_CONDITION_EXPRESSION_AFTER, name, __VA_ARGS__)
       #define RCUTILS_LOG_DEBUG_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_DEBUG, name, __VA_ARGS__)
       #define RCUTILS_LOG_INFO_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_INFO, name, __VA_ARGS__)
       #define RCUTILS_LOG_WARN_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_WARN, name, __VA_ARGS__)
       #define RCUTILS_LOG_ERROR_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_ERROR, name, __VA_ARGS__)
       #define RCUTILS_LOG_FATAL_NAMED(name, ...) RCUTILS_LOG_NAMED(RCUTILS_LOG_SEVERITY_FATAL, name, __VA_ARGS__)
+      #define RCUTILS_LOG_DEBUG_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_DEBUG, expression, name, __VA_ARGS__)
+      #define RCUTILS_LOG_INFO_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_INFO, expression, name, __VA_ARGS__)
+      #define RCUTILS_LOG_WARN_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_WARN, expression, name, __VA_ARGS__)
+      #define RCUTILS_LOG_ERROR_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_ERROR, expression, name, __VA_ARGS__)
+      #define RCUTILS_LOG_FATAL_EXPRESSION_NAMED(expression, name, ...) RCUTILS_LOG_EXPRESSION_NAMED(RCUTILS_LOG_SEVERITY_FATAL, expression, name, __VA_ARGS__)
       #define RCUTILS_LOG_ERROR_EXPRESSION(expression, ...) RCUTILS_LOG_EXPRESSION(RCUTILS_LOG_SEVERITY_ERROR, expression, __VA_ARGS__)
       #define RCUTILS_LOG_WARN_ONCE(...) RCUTILS_LOG_ONCE(RCUTILS_LOG_SEVERITY_WARN, __VA_ARGS__)
       #define RCUTILS_LOG_DEBUG(...) RCUTILS_LOG_DEBUG_NAMED(NULL, __VA_ARGS__)

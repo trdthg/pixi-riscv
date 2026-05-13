@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - |
@@ -47,6 +47,7 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages/rosidl_generator_py"
     - |
       cat > "$PREFIX/share/rosidl_generator_py/cmake/rosidl_generator_pyConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       include("${CMAKE_CURRENT_LIST_DIR}/rosidl_generator_py-extras.cmake")
       EOF
 
@@ -75,6 +76,8 @@ tests:
       - test -f $PREFIX/share/rosidl_generator_py/package.xml
       - test -x $PREFIX/lib/rosidl_generator_py/rosidl_generator_py
       - test -f $PREFIX/share/rosidl_generator_py/cmake/rosidl_generator_pyConfig.cmake
+      - test -f $PREFIX/share/rosidl_generator_py/cmake/rosidl_generator_py_get_typesupports.cmake
+      - test -f $PREFIX/lib/python3.13/site-packages/rosidl_generator_py/generate_py_impl.py
 
 # future requirements:
 #   run:

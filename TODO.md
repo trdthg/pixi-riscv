@@ -18,6 +18,10 @@ Current policy:
   - Provides `pybind11 2.13.6`, needed for Python 3.13 compatibility in the `rclpy` path.
 - [x] `ament-package`
   - Provides the early Python metadata helper used by the ament build system.
+- [x] `pyparsing`
+  - Provides the pure-Python parser dependency used by `catkin-pkg`.
+- [x] `catkin-pkg`
+  - Provides the package manifest parser required by `ament-cmake-core`.
 - [x] `patchelf`
   - Provides the ELF relocation tool needed by rattler-build for larger shared-library packages.
 
@@ -93,7 +97,7 @@ Current policy:
   - Preferred first RMW candidate if dependencies are manageable.
 - [ ] `rmw-fastrtps-cpp`
   - Alternative path if matching the existing source build path is more practical.
-- [ ] `rmw-fastrtps-shared-cpp`
+- [x] `rmw-fastrtps-shared-cpp`
 - [ ] `rmw-fastrtps-dynamic-cpp`
 - [x] `fastcdr`
   - FastDDS serialization dependency.

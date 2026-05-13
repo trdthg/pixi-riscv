@@ -1,0 +1,69 @@
+context:
+  name: "python-cmake-module"
+  ros_name: "python_cmake_module"
+  version: "0.10.0"
+  git_rev: "8591154b8bf29e5895a0c65bf02b5e29c994fae5"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/python_cmake_module.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/cmake/Modules" "$PREFIX/share/ament_index/resource_index/packages"
+    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
+    - cp python_cmake_module-extras.cmake "$PREFIX/share/${{ ros_name }}/cmake/python_cmake_module-extras.cmake"
+    - cp cmake/Modules/*.cmake "$PREFIX/share/${{ ros_name }}/cmake/Modules/"
+    - |
+      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
+    - |
+      cat > "$PREFIX/share/${{ ros_name }}/cmake/python_cmake_moduleConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
+      include("${CMAKE_CURRENT_LIST_DIR}/python_cmake_module-extras.cmake")
+      EOF
+
+requirements:
+  host:
+    - ament-cmake
+  run:
+    - ament-cmake
+
+# future requirements:
+#   build:
+#     - cmake
+#   run:
+#     - python
+#     - python-dev
+
+tests:
+  - script:
+      - test -f $PREFIX/share/python_cmake_module/package.xml
+      - test -f $PREFIX/share/python_cmake_module/cmake/python_cmake_moduleConfig.cmake
+      - test -f $PREFIX/share/python_cmake_module/cmake/Modules/FindPythonExtra.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_python_cmake_module NONE)
+        find_package(python_cmake_module REQUIRED)
+        list(FIND CMAKE_MODULE_PATH "${python_cmake_module_DIR}/Modules" index)
+        if(index EQUAL -1)
+          message(FATAL_ERROR "python_cmake_module did not extend CMAKE_MODULE_PATH")
+        endif()
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+
+about:
+  homepage: https://github.com/ros2/python_cmake_module
+  repository: https://github.com/ros2/python_cmake_module
+  summary: CMake module with extra Python functionality for ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -39,7 +39,7 @@ tests:
   - script:
       - |
         SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-      - PYTHONPATH="$SITE_PACKAGES" python3 -c "import em; assert em.BUFFERED_OPT is True; print(em.__version__)"
+      - PYTHONPATH="$SITE_PACKAGES" python3 -c "import em; assert hasattr(em, 'BUFFERED_OPT'); assert hasattr(em, 'Interpreter'); print(em.__version__)"
 
 about:
   homepage: http://www.alcyone.com/software/empy

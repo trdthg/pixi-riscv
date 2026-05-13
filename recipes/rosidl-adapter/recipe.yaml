@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - |
@@ -45,6 +45,12 @@ build:
       cat > "$PREFIX/share/rosidl_adapter/cmake/rosidl_adapterConfig.cmake" <<'EOF'
       include("${CMAKE_CURRENT_LIST_DIR}/rosidl_adapter-extras.cmake")
       EOF
+
+requirements:
+  host:
+    - empy
+  run:
+    - empy
 
 tests:
   - script:

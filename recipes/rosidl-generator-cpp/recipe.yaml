@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - |
@@ -49,6 +49,7 @@ build:
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages/rosidl_generator_cpp"
     - |
       cat > "$PREFIX/share/rosidl_generator_cpp/cmake/rosidl_generator_cppConfig.cmake" <<'EOF'
+      include_guard(GLOBAL)
       include("${CMAKE_CURRENT_LIST_DIR}/rosidl_generator_cpp-extras.cmake")
       EOF
 

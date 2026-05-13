@@ -1,7 +1,7 @@
 context:
   name: "rcl"
-  version: "6.1.1"
-  git_rev: "627d7c66fb024b2ac46fb8cacf7b12db06fb3738"
+  version: "5.3.13"
+  git_rev: "cbaee7c905e3276bb7a629eb1e18d8d3c781f194"
   source_dir: "rcl"
 
 package:
@@ -23,8 +23,8 @@ requirements:
   build:
     - patchelf
   host:
+    - ament-cmake-gen-version-h
     - ament-cmake-ros
-    - libyaml-vendor
     - rcl-interfaces
     - rcl-logging-interface
     - rcl-logging-spdlog
@@ -33,13 +33,10 @@ requirements:
     - rmw
     - rmw-implementation
     - rosidl-runtime-c
-    - service-msgs
     - tracetools
-    - type-description-interfaces
-    - yaml
   run:
+    - ament-cmake-gen-version-h
     - ament-cmake-ros
-    - libyaml-vendor
     - rcl-interfaces
     - rcl-logging-interface
     - rcl-logging-spdlog
@@ -48,10 +45,7 @@ requirements:
     - rmw
     - rmw-implementation
     - rosidl-runtime-c
-    - service-msgs
     - tracetools
-    - type-description-interfaces
-    - yaml
 
 # This recipe intentionally uses host cmake and compiler on the native riscv runner.
 # future requirements:

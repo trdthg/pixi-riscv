@@ -14,7 +14,7 @@ source:
 build:
   number: 0
   script:
-    - cmake -S googletest -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON
     - cmake --build build --target install -- -j"$(nproc)"
     - mkdir -p "$PREFIX/share/gtest/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - |

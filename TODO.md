@@ -152,5 +152,6 @@ Current policy:
 - P0 and P1 have already been uploaded to the `riscv` channel.
 - If a package is pure Python but needs host `python3`, avoid `noarch: python` for now; the current channel does not provide a conda Python package for the test environment.
 - When a package already exists on the channel with the same version and build number, bump `build.number` before re-uploading.
-- P4 message packages currently install interface files, generated `.idl`, ament index entries, and CMake metadata. Generated language runtime libraries and Python message modules are intentionally deferred until the client library/runtime packaging stages.
+- `builtin-interfaces`, `unique-identifier-msgs`, `std-msgs`, and `geometry-msgs` now use upstream CMake / rosidl generation and install generated C, C++, Python, and typesupport artifacts.
+- `action-msgs` still needs the same real rosidl generation conversion before moving deeper into `rcl-action`.
 - P5 currently has the base RMW API and runtime-selection proxy. It does not yet provide a concrete DDS transport, so it cannot publish or subscribe until `rmw-cyclonedds-cpp` or the FastDDS packages are packaged.

@@ -12,7 +12,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
@@ -38,14 +38,15 @@ tests:
   - script:
       - |
         SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-      - PYTHONPATH="$SITE_PACKAGES" python3 -c "from setuptools import find_packages, setup; import pkg_resources; print('setuptools ok')"
+        export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+      - python3 -c "from setuptools import find_packages, setup; import pkg_resources; print('setuptools ok')"
       - |
         cat > setup.py <<'PY'
         from setuptools import find_packages
         from setuptools import setup
         setup(name='test_setuptools_recipe', version='0.0.1', packages=find_packages())
         PY
-      - PYTHONPATH="$SITE_PACKAGES" python3 setup.py egg_info
+      - python3 setup.py egg_info
 
 about:
   homepage: https://github.com/pypa/setuptools

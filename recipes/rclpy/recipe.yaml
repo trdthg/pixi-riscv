@@ -15,7 +15,12 @@ source:
 build:
   number: 0
   script:
+    - |
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      DIST_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_local", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      export PYTHONPATH="$SITE_PACKAGES:$DIST_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
     - cd ${{ source_dir }}
+    - python3 -c "from setuptools import find_packages, setup; print('setuptools ready')"
     - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
     - cmake --build build --target install -- -j"$(nproc)"
 
@@ -45,6 +50,7 @@ requirements:
     - rosgraph-msgs
     - rosidl-runtime-c
     - rpyutils
+    - setuptools
     - unique-identifier-msgs
   run:
     - ament-index-python
@@ -63,6 +69,7 @@ requirements:
     - rosgraph-msgs
     - rosidl-runtime-c
     - rpyutils
+    - setuptools
     - unique-identifier-msgs
 
 # This recipe intentionally uses host cmake, compiler, and Python on the native
@@ -84,7 +91,8 @@ tests:
   - script:
       - |
         SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-        PYTHONPATH="$SITE_PACKAGES" python3 - <<'PY'
+        DIST_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_local", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+        PYTHONPATH="$SITE_PACKAGES:$DIST_PACKAGES" python3 - <<'PY'
         import rclpy
         import rclpy.impl.implementation_singleton as singleton
         assert singleton.rclpy_implementation

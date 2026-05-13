@@ -103,6 +103,7 @@ jobs:
               'recipes/rosidl-typesupport-fastrtps-cpp': 620,
               'recipes/rosidl-typesupport-fastrtps-c': 630,
               'recipes/rmw-fastrtps-shared-cpp': 640,
+              'recipes/rmw-fastrtps-cpp': 650,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

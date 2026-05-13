@@ -1,0 +1,100 @@
+context:
+  name: "rcl"
+  version: "6.1.1"
+  git_rev: "627d7c66fb024b2ac46fb8cacf7b12db06fb3738"
+  source_dir: "rcl"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/rcl.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
+
+requirements:
+  build:
+    - patchelf
+  host:
+    - ament-cmake-ros
+    - libyaml-vendor
+    - rcl-interfaces
+    - rcl-logging-interface
+    - rcl-logging-spdlog
+    - rcl-yaml-param-parser
+    - rcutils
+    - rmw
+    - rmw-implementation
+    - rosidl-runtime-c
+    - service-msgs
+    - tracetools
+    - type-description-interfaces
+    - yaml
+  run:
+    - ament-cmake-ros
+    - libyaml-vendor
+    - rcl-interfaces
+    - rcl-logging-interface
+    - rcl-logging-spdlog
+    - rcl-yaml-param-parser
+    - rcutils
+    - rmw
+    - rmw-implementation
+    - rosidl-runtime-c
+    - service-msgs
+    - tracetools
+    - type-description-interfaces
+    - yaml
+
+# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - cmake
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/librcl.so
+      - test -f $PREFIX/include/rcl/rcl/rcl.h
+      - test -f $PREFIX/share/rcl/cmake/rclConfig.cmake
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.10)
+        project(test_rcl C)
+        find_package(rcl REQUIRED)
+        add_executable(test_rcl test_rcl.c)
+        target_link_libraries(test_rcl PRIVATE rcl::rcl)
+        EOF
+      - |
+        cat > test_rcl.c <<'EOF'
+        #include <rcl/init_options.h>
+        int main(void) {
+          rcl_init_options_t options = rcl_get_zero_initialized_init_options();
+          return options.impl == 0 ? 0 : 1;
+        }
+        EOF
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_rcl
+
+about:
+  homepage: https://github.com/ros2/rcl
+  repository: https://github.com/ros2/rcl
+  summary: ROS client library common C implementation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

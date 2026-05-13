@@ -133,6 +133,7 @@ jobs:
               'recipes/spdlog': 740,
               'recipes/spdlog-vendor': 750,
               'recipes/rcl-logging-spdlog': 760,
+              'recipes/rcl': 770,
           }
           recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
           recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))

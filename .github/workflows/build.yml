@@ -77,6 +77,7 @@ jobs:
               'recipes/python': 6,
               'recipes/make': 7,
               'recipes/ninja': 8,
+              'recipes/numpy': 9,
               'recipes/pyparsing': 10,
               'recipes/setuptools': 12,
               'recipes/lark': 13,

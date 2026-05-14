@@ -35,7 +35,12 @@ requirements:
 
 tests:
   - script:
-      - $PREFIX/bin/python3.12 -c "import yaml; assert yaml.safe_load('a: 1')['a'] == 1; print('pyyaml ok')"
+      - |
+        $PREFIX/bin/python3.12 - <<'PY'
+        import yaml
+        assert yaml.safe_load('a: 1')['a'] == 1
+        print('pyyaml ok')
+        PY
 
 about:
   homepage: https://pyyaml.org/

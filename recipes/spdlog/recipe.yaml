@@ -12,7 +12,7 @@ source:
   sha256: ${{ sha256 }}
 
 build:
-  number: 2
+  number: 3
   script:
     - mkdir -p build
     - cd build
@@ -22,10 +22,11 @@ build:
     - printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/spdlog"
 
 requirements:
+  build:
+    - patchelf
   host:
     - cmake
     - fmt
-    - patchelf
   run:
     - fmt
 

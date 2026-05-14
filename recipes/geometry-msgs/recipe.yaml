@@ -14,25 +14,40 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
       export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
-    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-    - cmake --build build --target install -- -j"$(nproc)"
+    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
+    - |
+      python3 - <<'PY'
+      import os
+      import re
+      from pathlib import Path
+
+      cmake_dir = Path(os.environ["PREFIX"]) / "share/geometry_msgs/cmake"
+      for path in cmake_dir.glob("*.cmake"):
+          text = path.read_text()
+          text = re.sub(r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*(?:host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include)[^"]*"', 'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/geometry_msgs"', text)
+          text = re.sub(r';?/usr/lib/riscv64-linux-gnu/libpython[^;"]*', '', text)
+          path.write_text(text)
+      PY
 
 requirements:
   build:
     - patchelf
   host:
     - ament-cmake
+    - cmake
     - rosidl-default-generators
     - setuptools
     - std-msgs
   run:
     - ament-cmake
+    - cmake
     - rosidl-default-runtime
     - std-msgs
 
@@ -66,6 +81,11 @@ tests:
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - grep -q 'msg/Twist.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - |
+        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include' "$PREFIX/share/${{ ros_name }}/cmake"; then
+          echo "${{ ros_name }} CMake exports contain non-relocatable include paths"
+          exit 1
+        fi
+      - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.16)
         project(test_geometry_msgs C CXX)
@@ -74,7 +94,7 @@ tests:
           message(FATAL_ERROR "missing Twist.idl")
         endif()
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         cat > test_geometry_msgs.cpp <<'EOF'
         #include <geometry_msgs/msg/twist.hpp>

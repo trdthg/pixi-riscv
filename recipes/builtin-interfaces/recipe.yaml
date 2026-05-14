@@ -14,24 +14,40 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 4
+  number: 5
   script:
     - cd ${{ source_dir }}
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
       export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
-    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-    - cmake --build build --target install -- -j"$(nproc)"
+    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
+    - |
+      python3 - <<'PY'
+      import os
+      import re
+      from pathlib import Path
+
+      cmake_dir = Path(os.environ["PREFIX"]) / "share/builtin_interfaces/cmake"
+      bad = ("host_env_placehold", "/usr/lib", "python3-numpy", "numpy/_core/include")
+      for path in cmake_dir.glob("*.cmake"):
+          text = path.read_text()
+          text = re.sub(r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*(?:host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include)[^"]*"', 'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/builtin_interfaces"', text)
+          text = re.sub(r';?/usr/lib/riscv64-linux-gnu/libpython[^;"]*', '', text)
+          path.write_text(text)
+      PY
 
 requirements:
   build:
     - patchelf
   host:
     - ament-cmake
+    - cmake
     - rosidl-default-generators
     - setuptools
   run:
     - ament-cmake
+    - cmake
     - rosidl-default-runtime
 
 # This recipe intentionally uses host cmake and compiler on the native riscv runner.
@@ -60,6 +76,11 @@ tests:
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/builtin_interfaces
       - grep -q 'msg/Time.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/builtin_interfaces
       - |
+        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include' "$PREFIX/share/builtin_interfaces/cmake"; then
+          echo "builtin_interfaces CMake exports contain non-relocatable include paths"
+          exit 1
+        fi
+      - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.16)
         project(test_builtin_interfaces C CXX)
@@ -68,7 +89,7 @@ tests:
           message(FATAL_ERROR "missing Time.idl")
         endif()
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         cat > test_builtin_interfaces.cpp <<'EOF'
         #include <builtin_interfaces/msg/time.hpp>

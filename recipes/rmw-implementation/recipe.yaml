@@ -1,8 +1,8 @@
 context:
   name: "rmw-implementation"
   ros_name: "rmw_implementation"
-  version: "3.0.1"
-  git_rev: "e01f7832f7f795856942245fecc5b655197d0f46"
+  version: "2.8.5"
+  git_rev: "8fcd9754b88dfde971ce036ec973261a44325e01"
   source_dir: "rmw_implementation"
 
 package:

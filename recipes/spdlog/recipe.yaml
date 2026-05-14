@@ -1,55 +1,50 @@
 context:
   name: "spdlog"
   version: "1.12.0"
+  sha256: "4dccf2d10f410c1e2feaff89966bfc49a1abb29ef6f08246335b110e001e09a9"
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  url: https://github.com/gabime/spdlog/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
 build:
-  number: 0
+  number: 1
   script:
-    - mkdir -p "$PREFIX/share/spdlog/cmake" "$PREFIX/share/ament_index/resource_index/packages"
-    - |
-      cat > "$PREFIX/share/spdlog/cmake/spdlogConfig.cmake" <<'EOF'
-      include_guard(GLOBAL)
-      find_package(fmt REQUIRED)
-      find_path(spdlog_INCLUDE_DIR spdlog/spdlog.h)
-      find_library(spdlog_LIBRARY spdlog)
-      if(NOT spdlog_INCLUDE_DIR OR NOT spdlog_LIBRARY)
-        message(FATAL_ERROR "system spdlog headers/library not found")
-      endif()
-      if(NOT TARGET spdlog::spdlog)
-        add_library(spdlog::spdlog UNKNOWN IMPORTED)
-        set_target_properties(spdlog::spdlog PROPERTIES
-          IMPORTED_LOCATION "${spdlog_LIBRARY}"
-          INTERFACE_INCLUDE_DIRECTORIES "${spdlog_INCLUDE_DIR}"
-          INTERFACE_LINK_LIBRARIES "fmt::fmt"
-        )
-      endif()
-      set(spdlog_FOUND TRUE)
-      set(spdlog_INCLUDE_DIRS "${spdlog_INCLUDE_DIR}")
-      set(spdlog_LIBRARIES "${spdlog_LIBRARY}")
-      EOF
+    - mkdir -p build
+    - cd build
+    - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_EXAMPLES=OFF -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_TESTS_HO=OFF -DSPDLOG_BUILD_BENCH=OFF
+    - cmake --build . --target install -- -j"$(nproc)"
+    - mkdir -p "$PREFIX/share/ament_index/resource_index/packages"
     - printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/spdlog"
 
 requirements:
   host:
+    - cmake
     - fmt
   run:
     - fmt
 
-# This bootstrap recipe intentionally uses the system spdlog available on the
-# riscv runner. Enable these dependencies once the riscv channel has spdlog.
+# This recipe intentionally uses the host compiler on the native riscv runner.
+# Enable these dependencies once the riscv channel has compilers and libstdc++.
 # requirements:
 #   build:
 #     - cxx-compiler
 #   run:
-#     - spdlog
+#     - libstdcxx
 
 tests:
   - script:
-      - test -f $PREFIX/share/spdlog/cmake/spdlogConfig.cmake
+      - test -f $PREFIX/include/spdlog/spdlog.h
+      - test -f $PREFIX/lib/cmake/spdlog/spdlogConfig.cmake
+      - |
+        if ! ls "$PREFIX"/lib/libspdlog.so* >/dev/null 2>&1; then
+          echo "missing spdlog shared library"
+          exit 1
+        fi
       - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.10)
@@ -72,7 +67,8 @@ tests:
 
 about:
   homepage: https://github.com/gabime/spdlog
-  summary: CMake shim for system spdlog
+  repository: https://github.com/gabime/spdlog
+  summary: Fast C++ logging library
   license: MIT
 
 extra:

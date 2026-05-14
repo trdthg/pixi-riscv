@@ -1,47 +1,47 @@
 context:
   name: "fmt"
   version: "10.1.1"
+  sha256: "78b8c0a72b1c35e4443a7e308df52498252d1cefc2b08c9a97bc9ee6cfe61f8b"
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  url: https://github.com/fmtlib/fmt/archive/refs/tags/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
 build:
-  number: 0
+  number: 1
   script:
-    - mkdir -p "$PREFIX/share/fmt/cmake" "$PREFIX/share/ament_index/resource_index/packages"
-    - |
-      cat > "$PREFIX/share/fmt/cmake/fmtConfig.cmake" <<'EOF'
-      include_guard(GLOBAL)
-      find_path(fmt_INCLUDE_DIR fmt/format.h)
-      find_library(fmt_LIBRARY fmt)
-      if(NOT fmt_INCLUDE_DIR OR NOT fmt_LIBRARY)
-        message(FATAL_ERROR "system fmt headers/library not found")
-      endif()
-      if(NOT TARGET fmt::fmt)
-        add_library(fmt::fmt UNKNOWN IMPORTED)
-        set_target_properties(fmt::fmt PROPERTIES
-          IMPORTED_LOCATION "${fmt_LIBRARY}"
-          INTERFACE_INCLUDE_DIRECTORIES "${fmt_INCLUDE_DIR}"
-        )
-      endif()
-      set(fmt_FOUND TRUE)
-      set(fmt_INCLUDE_DIRS "${fmt_INCLUDE_DIR}")
-      set(fmt_LIBRARIES "${fmt_LIBRARY}")
-      EOF
+    - mkdir -p build
+    - cd build
+    - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFMT_TEST=OFF -DFMT_DOC=OFF
+    - cmake --build . --target install -- -j"$(nproc)"
+    - mkdir -p "$PREFIX/share/ament_index/resource_index/packages"
     - printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/fmt"
 
-# This bootstrap recipe intentionally uses the system fmt available on the
-# riscv runner. Enable these dependencies once the riscv channel has fmt.
+requirements:
+  host:
+    - cmake
+
+# This recipe intentionally uses the host compiler on the native riscv runner.
+# Enable these dependencies once the riscv channel has compilers and libstdc++.
 # requirements:
 #   build:
 #     - cxx-compiler
 #   run:
-#     - fmt
+#     - libstdcxx
 
 tests:
   - script:
-      - test -f $PREFIX/share/fmt/cmake/fmtConfig.cmake
+      - test -f $PREFIX/include/fmt/format.h
+      - test -f $PREFIX/lib/cmake/fmt/fmt-config.cmake
+      - |
+        if ! ls "$PREFIX"/lib/libfmt.so* >/dev/null 2>&1; then
+          echo "missing fmt shared library"
+          exit 1
+        fi
       - |
         cat > CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.10)
@@ -63,7 +63,8 @@ tests:
 
 about:
   homepage: https://github.com/fmtlib/fmt
-  summary: CMake shim for system fmt
+  repository: https://github.com/fmtlib/fmt
+  summary: Open-source formatting library
   license: MIT
 
 extra:

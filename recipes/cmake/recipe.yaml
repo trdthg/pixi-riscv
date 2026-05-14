@@ -31,9 +31,9 @@ build:
 
 tests:
   - script:
-      - test -x "$PREFIX/bin/cmake"
-      - "$PREFIX/bin/cmake" --version
-      - "$PREFIX/bin/cmake" -E echo "cmake ok"
+      - test -x $PREFIX/bin/cmake
+      - $PREFIX/bin/cmake --version
+      - $PREFIX/bin/cmake -E echo cmake-ok
 
 about:
   homepage: https://cmake.org/

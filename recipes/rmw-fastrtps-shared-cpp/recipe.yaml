@@ -1,8 +1,8 @@
 context:
   name: "rmw-fastrtps-shared-cpp"
   ros_name: "rmw_fastrtps_shared_cpp"
-  version: "6.2.7"
-  git_rev: "37f7ef88fbec216d47883763f185bd39fc50b5a1"
+  version: "6.2.10"
+  git_rev: "cbe12977497c9c536317ca6488edf2f23b8c1830"
   source_dir: "rmw_fastrtps_shared_cpp"
 
 package:
@@ -14,7 +14,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 0
   script:
     - cd ${{ source_dir }}
     - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF

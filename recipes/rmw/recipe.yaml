@@ -1,7 +1,7 @@
 context:
   name: "rmw"
-  version: "6.1.1"
-  git_rev: "2a4ee718d0da004d5629f50afd2896fbd1f4aedd"
+  version: "6.1.2"
+  git_rev: "e5901447f14762975c7a8ea658f0ac731f4fb1c2"
   source_dir: "rmw"
 
 package:
@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 0
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rmw/cmake" "$PREFIX/share/ament_index/resource_index/packages"

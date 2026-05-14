@@ -1,8 +1,8 @@
 context:
   name: "rmw-implementation-cmake"
   ros_name: "rmw_implementation_cmake"
-  version: "6.1.1"
-  git_rev: "2a4ee718d0da004d5629f50afd2896fbd1f4aedd"
+  version: "6.1.2"
+  git_rev: "e5901447f14762975c7a8ea658f0ac731f4fb1c2"
   source_dir: "rmw_implementation_cmake"
 
 package:

@@ -7,6 +7,7 @@ Current policy:
 - Prefer one recipe per package under `recipes/<name>/recipe.yaml`.
 - Use host tools such as `gcc`, `cmake`, and `python3` until the `riscv` channel has enough bootstrap packages.
 - Keep future conda dependencies commented in recipes when useful, so they can be enabled later.
+- Align ROS package versions with the ROS 2 Humble rosdistro before adding or updating runtime packages.
 - Do not target ROS 2 Desktop, Gazebo, Nav2, or SLAM on `riscv64` in this repository.
 - Primary target is enough runtime to publish `geometry_msgs/Twist` to `/cmd_vel_teleop`.
 
@@ -156,6 +157,8 @@ Current policy:
 - P0 and P1 have already been uploaded to the `riscv` channel.
 - If a package is pure Python but needs host `python3`, avoid `noarch: python` for now; the current channel does not provide a conda Python package for the test environment.
 - When a package already exists on the channel with the same version and build number, bump `build.number` before re-uploading.
+- Current Humble RMW alignment is `rmw` / `rmw_implementation_cmake` 6.1.2, `rmw_implementation` 2.8.5, `rmw_dds_common` 1.6.0, and `rmw_fastrtps*` 6.2.10.
+- Do not use `rmw_implementation` 3.x with the Humble FastDDS RMW chain; it probes newer RMW symbols and produces startup errors with Humble `rmw_fastrtps`.
 - `builtin-interfaces`, `unique-identifier-msgs`, `std-msgs`, and `geometry-msgs` now use upstream CMake / rosidl generation and install generated C, C++, Python, and typesupport artifacts.
 - `action-msgs` still needs the same real rosidl generation conversion before moving deeper into `rcl-action`.
-- P5 currently has the base RMW API and runtime-selection proxy. It does not yet provide a concrete DDS transport, so it cannot publish or subscribe until `rmw-cyclonedds-cpp` or the FastDDS packages are packaged.
+- P5 currently uses the FastDDS RMW packages as the concrete DDS transport. Keep `ldd -r` tests on RMW shared libraries to catch unresolved runtime symbols.

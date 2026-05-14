@@ -12,10 +12,10 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/rpyutils" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R rpyutils "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/rpyutils/package.xml"
@@ -29,17 +29,17 @@ build:
       Summary: Python utility helpers used by ROS 2
       EOF
 
-# future requirements:
-#   build:
-#     - python
-#   run:
-#     - python
+requirements:
+  host:
+    - python
+  run:
+    - python
 
 tests:
   - script:
       - |
-        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-      - PYTHONPATH="$SITE_PACKAGES" python3 -c "from rpyutils import add_dll_directories_from_env; print('rpyutils ok')"
+        SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - $PREFIX/bin/python3.12 -c "from rpyutils import add_dll_directories_from_env; print('rpyutils ok')"
       - test -f $PREFIX/share/rpyutils/package.xml
       - test -f $PREFIX/share/ament_index/resource_index/packages/rpyutils
 

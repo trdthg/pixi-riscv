@@ -12,10 +12,10 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES"
     - cp -R setuptools pkg_resources _distutils_hack "$SITE_PACKAGES/"
     - mkdir -p "$SITE_PACKAGES/setuptools-${{ version }}.dist-info"
@@ -28,25 +28,25 @@ build:
       EOF
     - cp bootstrap.egg-info/entry_points.txt "$SITE_PACKAGES/setuptools-${{ version }}.dist-info/entry_points.txt"
 
-# future requirements:
-#   build:
-#     - python
-#   run:
-#     - python
+requirements:
+  host:
+    - python
+  run:
+    - python
 
 tests:
   - script:
       - |
-        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+        SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
         export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
-      - python3 -c "from setuptools import find_packages, setup; import pkg_resources; print('setuptools ok')"
+      - $PREFIX/bin/python3.12 -c "from setuptools import find_packages, setup; import pkg_resources; print('setuptools ok')"
       - |
         cat > setup.py <<'PY'
         from setuptools import find_packages
         from setuptools import setup
         setup(name='test_setuptools_recipe', version='0.0.1', packages=find_packages())
         PY
-      - python3 setup.py egg_info
+      - $PREFIX/bin/python3.12 setup.py egg_info
 
 about:
   homepage: https://github.com/pypa/setuptools

@@ -12,28 +12,28 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/share/ament_package" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R ament_package "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/ament_package/package.xml"
     - cp resource/ament_package "$PREFIX/share/ament_index/resource_index/packages/ament_package"
 
-# requirements:
-#   build:
-#     - python
-#   run:
-#     - python
+requirements:
+  host:
+    - python
+  run:
+    - python
 #     - importlib-metadata
 #     - importlib-resources
 
 tests:
   - script:
       - |
-        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-      - PYTHONPATH="$SITE_PACKAGES" python3 -c "import ament_package; print('ament_package ok')"
+        SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      - $PREFIX/bin/python3.12 -c "import ament_package; print('ament_package ok')"
       - test -f $PREFIX/share/ament_package/package.xml
       - test -f $PREFIX/share/ament_index/resource_index/packages/ament_package
 

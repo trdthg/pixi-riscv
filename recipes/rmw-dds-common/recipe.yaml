@@ -4,8 +4,6 @@ context:
   version: "1.6.0"
   git_rev: "e26ba1079886c5598614172db0b27526aa6af07d"
   source_dir: "rmw_dds_common"
-  interface_files: "msg/Gid.msg msg/NodeEntitiesInfo.msg msg/ParticipantEntitiesInfo.msg"
-  recursive_dependencies: ""
 
 package:
   name: ${{ name }}
@@ -16,214 +14,88 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
-    - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_interfaces"
-    - cp -R include/${{ ros_name }} "$PREFIX/include/"
     - |
-      python3 - <<'PY'
-      import os
-      from pathlib import Path
-      path = Path(os.environ["PREFIX"]) / "include" / "rmw_dds_common" / "gid_utils.hpp"
-      text = path.read_text()
-      text = text.replace(
-          "#define RMW_DDS_COMMON__GID_UTILS_HPP_\n",
-          "#define RMW_DDS_COMMON__GID_UTILS_HPP_\n#include <ostream>\n",
-          1,
-      )
-      path.write_text(text)
-      PY
-    - |
-      mkdir -p "$PREFIX/include/${{ ros_name }}/msg"
-      cat > "$PREFIX/include/${{ ros_name }}/msg/gid.hpp" <<'EOF'
-      #ifndef RMW_DDS_COMMON__MSG__GID_HPP_
-      #define RMW_DDS_COMMON__MSG__GID_HPP_
-      #include <array>
-      #include <cstdint>
-      namespace rmw_dds_common {
-      namespace msg {
-      struct Gid
-      {
-        std::array<uint8_t, 24> data {};
-        bool operator==(const Gid & other) const { return data == other.data; }
-        bool operator!=(const Gid & other) const { return !(*this == other); }
-      };
-      }  // namespace msg
-      }  // namespace rmw_dds_common
-      #endif  // RMW_DDS_COMMON__MSG__GID_HPP_
-      EOF
-    - |
-      cat > "$PREFIX/include/${{ ros_name }}/msg/node_entities_info.hpp" <<'EOF'
-      #ifndef RMW_DDS_COMMON__MSG__NODE_ENTITIES_INFO_HPP_
-      #define RMW_DDS_COMMON__MSG__NODE_ENTITIES_INFO_HPP_
-      #include <string>
-      #include <vector>
-      #include "rmw_dds_common/msg/gid.hpp"
-      namespace rmw_dds_common {
-      namespace msg {
-      struct NodeEntitiesInfo
-      {
-        std::string node_namespace;
-        std::string node_name;
-        std::vector<Gid> reader_gid_seq;
-        std::vector<Gid> writer_gid_seq;
-      };
-      }  // namespace msg
-      }  // namespace rmw_dds_common
-      #endif  // RMW_DDS_COMMON__MSG__NODE_ENTITIES_INFO_HPP_
-      EOF
-    - |
-      cat > "$PREFIX/include/${{ ros_name }}/msg/participant_entities_info.hpp" <<'EOF'
-      #ifndef RMW_DDS_COMMON__MSG__PARTICIPANT_ENTITIES_INFO_HPP_
-      #define RMW_DDS_COMMON__MSG__PARTICIPANT_ENTITIES_INFO_HPP_
-      #include <vector>
-      #include "rmw_dds_common/msg/gid.hpp"
-      #include "rmw_dds_common/msg/node_entities_info.hpp"
-      namespace rmw_dds_common {
-      namespace msg {
-      struct ParticipantEntitiesInfo
-      {
-        Gid gid;
-        std::vector<NodeEntitiesInfo> node_entities_info_seq;
-      };
-      }  // namespace msg
-      }  // namespace rmw_dds_common
-      #endif  // RMW_DDS_COMMON__MSG__PARTICIPANT_ENTITIES_INFO_HPP_
-      EOF
-    - |
-      c++ -std=c++14 -fPIC -DRMW_DDS_COMMON_BUILDING_LIBRARY \
-        -I"$PREFIX/include" -Iinclude \
-        -shared \
-        src/gid_utils.cpp \
-        src/graph_cache.cpp \
-        src/qos.cpp \
-        src/security.cpp \
-        src/time_utils.cpp \
-        -L"$PREFIX/lib" -lrmw -lrcpputils -lrcutils -lrosidl_runtime_c -Wl,-rpath,"$PREFIX/lib" \
-        -o "$PREFIX/lib/librmw_dds_common.so"
-    - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
-    - |
-      for path in ${{ interface_files }}; do
-        mkdir -p "$PREFIX/share/${{ ros_name }}/$(dirname "$path")"
-        cp "$path" "$PREFIX/share/${{ ros_name }}/$path"
-      done
-    - |
-      mkdir -p /tmp/${{ ros_name }}_idl/msg
-      cat > /tmp/${{ ros_name }}_idl/msg/Gid.idl <<'EOF'
-      module rmw_dds_common {
-        module msg {
-          struct Gid {
-            uint8 data[24];
-          };
-        };
-      };
-      EOF
-      cat > /tmp/${{ ros_name }}_idl/msg/NodeEntitiesInfo.idl <<'EOF'
-      #include "rmw_dds_common/msg/Gid.idl"
-      module rmw_dds_common {
-        module msg {
-          struct NodeEntitiesInfo {
-            string<256> node_namespace;
-            string<256> node_name;
-            sequence<rmw_dds_common::msg::Gid> reader_gid_seq;
-            sequence<rmw_dds_common::msg::Gid> writer_gid_seq;
-          };
-        };
-      };
-      EOF
-      cat > /tmp/${{ ros_name }}_idl/msg/ParticipantEntitiesInfo.idl <<'EOF'
-      #include "rmw_dds_common/msg/Gid.idl"
-      #include "rmw_dds_common/msg/NodeEntitiesInfo.idl"
-      module rmw_dds_common {
-        module msg {
-          struct ParticipantEntitiesInfo {
-            rmw_dds_common::msg::Gid gid;
-            sequence<rmw_dds_common::msg::NodeEntitiesInfo> node_entities_info_seq;
-          };
-        };
-      };
-      EOF
-    - |
-      for rel in msg/Gid.idl msg/NodeEntitiesInfo.idl msg/ParticipantEntitiesInfo.idl; do
-        cp "/tmp/${{ ros_name }}_idl/$rel" "$PREFIX/share/${{ ros_name }}/$rel"
-      done
-    - |
-      printf '%s\n' msg/Gid.idl msg/NodeEntitiesInfo.idl msg/ParticipantEntitiesInfo.idl ${{ interface_files }} | sort > "$PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}"
-    - |
-      cat > "$PREFIX/share/${{ ros_name }}/cmake/rosidl_cmake-extras.cmake" <<'EOF'
-      set(rmw_dds_common_IDL_FILES "msg/Gid.idl;msg/NodeEntitiesInfo.idl;msg/ParticipantEntitiesInfo.idl")
-      set(rmw_dds_common_INTERFACE_FILES "msg/Gid.msg;msg/NodeEntitiesInfo.msg;msg/ParticipantEntitiesInfo.msg")
-      set(rmw_dds_common_RECURSIVE_DEPENDENCIES "")
-      set(rmw_dds_common_TARGETS "rmw_dds_common::rmw_dds_common_library")
-      set(rmw_dds_common_LIBRARIES__rosidl_typesupport_cpp rmw_dds_common::rmw_dds_common_library)
-      set(rmw_dds_common_LIBRARIES__rosidl_typesupport_introspection_cpp rmw_dds_common::rmw_dds_common_library)
-      set(rmw_dds_common_LIBRARIES__rosidl_typesupport_fastrtps_cpp rmw_dds_common::rmw_dds_common_library)
-      EOF
-    - |
-      printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}"
-    - |
-      cat > "$PREFIX/share/${{ ros_name }}/cmake/rmw_dds_commonConfig.cmake" <<'EOF'
-      find_package(rcutils REQUIRED)
-      find_package(rcpputils REQUIRED)
-      find_package(rmw REQUIRED)
-      find_package(rosidl_runtime_cpp REQUIRED)
-      include("${CMAKE_CURRENT_LIST_DIR}/rmw_dds_commonTargets.cmake")
-      include("${CMAKE_CURRENT_LIST_DIR}/rosidl_cmake-extras.cmake")
-      set(rmw_dds_common_LIBRARIES rmw_dds_common::rmw_dds_common_library)
-      set(rmw_dds_common_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../../include")
-      EOF
-    - |
-      cat > "$PREFIX/share/${{ ros_name }}/cmake/rmw_dds_commonTargets.cmake" <<'EOF'
-      add_library(rmw_dds_common::rmw_dds_common_library SHARED IMPORTED)
-      set_target_properties(rmw_dds_common::rmw_dds_common_library PROPERTIES
-        IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../lib/librmw_dds_common.so"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-        INTERFACE_LINK_LIBRARIES "rmw::rmw;rcpputils::rcpputils;rcutils::rcutils;rosidl_runtime_cpp::rosidl_runtime_cpp"
-      )
-      EOF
+      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
 
 requirements:
+  build:
+    - patchelf
   host:
-    - rcutils
+    - ament-cmake
     - rcpputils
+    - rcutils
     - rmw
-    - rosidl-runtime-c
-    - rosidl-runtime-cpp
+    - rosidl-default-generators
+    - rosidl-typesupport-cpp
+    - setuptools
   run:
-    - rcutils
+    - ament-cmake
     - rcpputils
+    - rcutils
     - rmw
-    - rosidl-runtime-c
-    - rosidl-runtime-cpp
+    - rosidl-default-runtime
+    - rosidl-typesupport-cpp
 
+# This recipe intentionally uses host cmake, compiler, and Python on the native
+# riscv runner. Enable these dependencies once the riscv channel has them.
 # future requirements:
 #   build:
 #     - cxx-compiler
+#     - cmake
+#     - make
+#   host:
+#     - python
 #   run:
 #     - libstdcxx
+#     - python
 
 tests:
   - script:
       - test -f $PREFIX/lib/librmw_dds_common.so
-      - test -f $PREFIX/include/rmw_dds_common/graph_cache.hpp
-      - test -f $PREFIX/include/rmw_dds_common/msg/participant_entities_info.hpp
-      - test -f $PREFIX/share/ament_index/resource_index/packages/rmw_dds_common
+      - test -f $PREFIX/lib/librmw_dds_common__rosidl_typesupport_cpp.so
+      - test -f $PREFIX/lib/librmw_dds_common__rosidl_typesupport_fastrtps_cpp.so
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/graph_cache.hpp
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/participant_entities_info.hpp
+      - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - grep -q 'msg/ParticipantEntitiesInfo.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(test_rmw_dds_common CXX)
+        find_package(rmw_dds_common REQUIRED)
+        add_executable(test_rmw_dds_common test_rmw_dds_common.cpp)
+        target_link_libraries(test_rmw_dds_common PRIVATE rmw_dds_common::rmw_dds_common_library)
+        EOF
       - |
         cat > test_rmw_dds_common.cpp <<'EOF'
+        #include <rosidl_typesupport_cpp/message_type_support.hpp>
         #include <rmw_dds_common/gid_utils.hpp>
         #include <rmw_dds_common/msg/gid.hpp>
+        #include <rmw_dds_common/msg/participant_entities_info.hpp>
         int main() {
           rmw_gid_t gid{};
           rmw_dds_common::msg::Gid msg;
           rmw_dds_common::convert_gid_to_msg(&gid, &msg);
           rmw_gid_t roundtrip{};
           rmw_dds_common::convert_msg_to_gid(&msg, &roundtrip);
-          return rmw_dds_common::operator==(gid, roundtrip) ? 0 : 1;
+          auto ts = rosidl_typesupport_cpp::get_message_type_support_handle<
+            rmw_dds_common::msg::ParticipantEntitiesInfo>();
+          return rmw_dds_common::operator==(gid, roundtrip) && ts != nullptr ? 0 : 1;
         }
         EOF
-      - c++ -std=c++14 -I$PREFIX/include test_rmw_dds_common.cpp -L$PREFIX/lib -lrmw_dds_common -lrmw -lrcpputils -lrcutils -lrosidl_runtime_c -Wl,-rpath,$PREFIX/lib -o test_rmw_dds_common
-      - ./test_rmw_dds_common
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake --build build
+      - ./build/test_rmw_dds_common
+      - |
+        missing=$(ldd -r $PREFIX/lib/librmw_dds_common.so 2>&1 | grep 'undefined symbol' || true)
+        test -z "$missing" || { echo "$missing"; exit 1; }
 
 about:
   homepage: https://github.com/ros2/rmw_dds_common

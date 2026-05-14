@@ -14,7 +14,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
     - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
@@ -87,6 +87,9 @@ tests:
         find_package(rmw_fastrtps_cpp REQUIRED)
         EOF
       - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - |
+        missing=$(ldd -r $PREFIX/lib/librmw_fastrtps_cpp.so 2>&1 | grep 'undefined symbol' || true)
+        test -z "$missing" || { echo "$missing"; exit 1; }
 
 about:
   homepage: https://github.com/ros2/rmw_fastrtps

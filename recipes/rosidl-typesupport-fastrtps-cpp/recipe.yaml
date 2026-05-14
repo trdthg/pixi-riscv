@@ -144,14 +144,6 @@ tests:
       - $PREFIX/lib/rosidl_typesupport_fastrtps_cpp/rosidl_typesupport_fastrtps_cpp --help >/dev/null
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_typesupport_cpp/rosidl_typesupport_fastrtps_cpp
       - |
-        cat > CMakeLists.txt <<'EOF'
-        cmake_minimum_required(VERSION 3.10)
-        project(test_rosidl_typesupport_fastrtps_cpp_config CXX)
-        find_package(rosidl_typesupport_fastrtps_cpp REQUIRED)
-        find_package(rosidl_typesupport_fastrtps_cpp REQUIRED)
-        EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
-      - |
         cat > test_fastrtps_cpp.cpp <<'EOF'
         #include <cstring>
         #include <rosidl_typesupport_fastrtps_cpp/identifier.hpp>

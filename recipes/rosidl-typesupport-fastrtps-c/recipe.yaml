@@ -14,18 +14,31 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/include" "$PREFIX/lib/${{ ros_name }}" "$PREFIX/lib" "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_typesupport_c" "$PREFIX/share/ament_index/resource_index/rosidl_runtime_packages"
     - cp -R include/${{ ros_name }} "$PREFIX/include/"
     - cp -R ${{ ros_name }} "$SITE_PACKAGES/"
     - cp -R cmake "$PREFIX/share/${{ ros_name }}/"
     - cp -R resource "$PREFIX/share/${{ ros_name }}/"
-    - cp bin/${{ ros_name }} "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
-    - chmod +x "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}"
+    - cp bin/${{ ros_name }} "$PREFIX/lib/${{ ros_name }}/_${{ ros_name }}_entry.py"
+    - |
+      cat > "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}" <<'EOF'
+      #!/usr/bin/env python3
+      import os
+      import runpy
+      import sys
+
+      prefix = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+      sys.path.insert(0, os.path.join(prefix, 'lib', 'python3.12', 'site-packages'))
+      entry = os.path.join(prefix, 'lib', 'rosidl_typesupport_fastrtps_c', '_rosidl_typesupport_fastrtps_c_entry.py')
+      sys.argv[0] = entry
+      runpy.run_path(entry, run_name='__main__')
+      EOF
+    - chmod +x "$PREFIX/lib/${{ ros_name }}/${{ ros_name }}" "$PREFIX/lib/${{ ros_name }}/_${{ ros_name }}_entry.py"
     - |
       c++ -std=c++14 -fPIC -DROSIDL_TYPESUPPORT_FASTRTPS_C_BUILDING_DLL \
         -Iinclude -I"$PREFIX/include" \
@@ -89,6 +102,7 @@ requirements:
   host:
     - ament-cmake-core
     - ament-index-python
+    - python
     - fastcdr
     - fastrtps-cmake-module
     - rmw
@@ -102,6 +116,7 @@ requirements:
   run:
     - ament-cmake-core
     - ament-index-python
+    - python
     - fastcdr
     - fastrtps-cmake-module
     - rmw
@@ -118,7 +133,6 @@ requirements:
 #     - cxx-compiler
 #   run:
 #     - libstdcxx
-#     - python
 
 tests:
   - script:
@@ -126,6 +140,8 @@ tests:
       - test -f $PREFIX/include/rosidl_typesupport_fastrtps_c/identifier.h
       - test -f $PREFIX/include/rosidl_typesupport_fastrtps_c/wstring_conversion.hpp
       - test -x $PREFIX/lib/rosidl_typesupport_fastrtps_c/rosidl_typesupport_fastrtps_c
+      - $PREFIX/bin/python3.12 -c "import rosidl_typesupport_fastrtps_c; print('rosidl_typesupport_fastrtps_c ok')"
+      - $PREFIX/lib/rosidl_typesupport_fastrtps_c/rosidl_typesupport_fastrtps_c --help >/dev/null
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_typesupport_c/rosidl_typesupport_fastrtps_c
       - |
         cat > CMakeLists.txt <<'EOF'

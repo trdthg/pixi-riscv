@@ -73,6 +73,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           order = {
+              'recipes/cmake': 5,
               'recipes/pyparsing': 10,
               'recipes/setuptools': 12,
               'recipes/lark': 13,

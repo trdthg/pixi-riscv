@@ -1,0 +1,47 @@
+context:
+  name: "cmake"
+  version: "3.28.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Kitware/CMake/releases/download/v${{ version }}/cmake-${{ version }}.tar.gz
+  sha256: 72b7570e5c8593de6ac4ab433b73eab18c5fb328880460c86ce32608141ad5c1
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - ./bootstrap --prefix="$PREFIX" --parallel="$(nproc)" -- -DCMAKE_USE_OPENSSL=OFF
+    - make -j"$(nproc)"
+    - make install
+
+# This recipe intentionally uses the host compiler on the native riscv runner.
+# Keep it independent from conda cmake so it can bootstrap the rest of the
+# channel. Enable compiler dependencies once the riscv channel has toolchains.
+# future requirements:
+#   build:
+#     - cxx-compiler
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -x "$PREFIX/bin/cmake"
+      - "$PREFIX/bin/cmake" --version
+      - "$PREFIX/bin/cmake" -E echo "cmake ok"
+
+about:
+  homepage: https://cmake.org/
+  repository: https://github.com/Kitware/CMake
+  summary: Cross-platform build-system generator
+  license: BSD-3-Clause
+  license_file: Copyright.txt
+
+extra:
+  recipe-maintainers:
+    - trdthg

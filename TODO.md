@@ -10,6 +10,16 @@ Current policy:
 - Align ROS package versions with the ROS 2 Humble rosdistro before adding or updating runtime packages.
 - Do not target ROS 2 Desktop, Gazebo, Nav2, or SLAM on `riscv64` in this repository.
 - Primary target is enough runtime to publish `geometry_msgs/Twist` to `/cmd_vel_teleop`.
+- `conda-forge/linux-riscv64` currently has repodata but no usable package records, so do not assume `python`, `cmake`, compiler, or system-library packages exist there.
+
+## P-1: Conda Runtime Bootstrap
+
+- [x] `cmake`
+  - Bootstrap with host compiler and CMake's own `bootstrap` script so future recipes can depend on `$PREFIX/bin/cmake`.
+- [ ] `python`
+  - Preferred long-term fix for Python path instability. Package CPython into the channel, then make Python packages depend on it and install into `$PREFIX/lib/pythonX.Y/site-packages`.
+  - Bootstrap dependency chain likely includes at least `openssl`, `zlib`, `bzip2`, `xz`, `libffi`, `sqlite`, `readline`, and `ncurses` if we want a relocatable conda-style Python.
+  - A host-linked CPython package is possible as an intermediate step, but it should be marked as bootstrap-only because it depends on the runner/system libraries.
 
 ## P0: Completed Bootstrap Packages
 

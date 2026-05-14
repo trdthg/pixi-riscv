@@ -13,11 +13,11 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - cd ${{ source_dir }}
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_adapter" "$PREFIX/share/rosidl_adapter/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R rosidl_adapter "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/rosidl_adapter/package.xml"
@@ -49,8 +49,10 @@ build:
 requirements:
   host:
     - empy
+    - python
   run:
     - empy
+    - python
 
 tests:
   - script:

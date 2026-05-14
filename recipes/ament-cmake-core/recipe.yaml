@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 4
+  number: 5
   script:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/share/ament_cmake_core/cmake" "$PREFIX/share/ament_index/resource_index/packages"
@@ -34,6 +34,7 @@ build:
           set(ENV{AMENT_PREFIX_PATH} "${_ament_cmake_core_prefix}:$ENV{AMENT_PREFIX_PATH}")
         endif()
       endif()
+      set(Python3_EXECUTABLE "${_ament_cmake_core_prefix}/bin/python3.12" CACHE FILEPATH "Python interpreter" FORCE)
       find_package(Python3 REQUIRED COMPONENTS Interpreter)
       execute_process(
         COMMAND "${Python3_EXECUTABLE}" -c "import os, sysconfig; print(sysconfig.get_path('purelib', scheme='posix_prefix', vars={'base': r'${_ament_cmake_core_prefix}', 'platbase': r'${_ament_cmake_core_prefix}'}))"
@@ -53,15 +54,14 @@ build:
       EOF
 
 requirements:
+  host:
+    - cmake
+    - python
   run:
     - ament-package
     - catkin-pkg
-
-# future requirements:
-#   build:
-#     - cmake
-#   run:
-#     - python
+    - cmake
+    - python
 
 tests:
   - script:
@@ -85,7 +85,7 @@ tests:
         find_package(ament_cmake_core REQUIRED)
         ament_package_xml()
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
 
 about:
   homepage: https://github.com/ament/ament_cmake

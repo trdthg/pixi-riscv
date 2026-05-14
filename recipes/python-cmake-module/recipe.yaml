@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - mkdir -p "$PREFIX/share/${{ ros_name }}/cmake" "$PREFIX/share/${{ ros_name }}/cmake/Modules" "$PREFIX/share/ament_index/resource_index/packages"
     - cp package.xml "$PREFIX/share/${{ ros_name }}/package.xml"
@@ -30,15 +30,12 @@ build:
 requirements:
   host:
     - ament-cmake
+    - cmake
+    - python
   run:
     - ament-cmake
-
-# future requirements:
-#   build:
-#     - cmake
-#   run:
-#     - python
-#     - python-dev
+    - cmake
+    - python
 
 tests:
   - script:
@@ -55,7 +52,7 @@ tests:
           message(FATAL_ERROR "python_cmake_module did not extend CMAKE_MODULE_PATH")
         endif()
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
 
 about:
   homepage: https://github.com/ros2/python_cmake_module

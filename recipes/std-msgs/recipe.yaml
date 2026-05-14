@@ -14,16 +14,16 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - cd ${{ source_dir }}
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$("$PREFIX/bin/python3.12" -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
       export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
-    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DPython3_EXECUTABLE=/usr/bin/python3 -DPYTHON_EXECUTABLE=/usr/bin/python3
-    - cmake --build build --target install -- -j"$(nproc)"
+    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DPython3_EXECUTABLE="$PREFIX/bin/python3.12" -DPYTHON_EXECUTABLE="$PREFIX/bin/python3.12"
+    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
     - |
-      python3 - <<'PY'
+      "$PREFIX/bin/python3.12" - <<'PY'
       import os
       import re
       from pathlib import Path
@@ -31,22 +31,27 @@ build:
       cmake_dir = Path(os.environ["PREFIX"]) / "share/std_msgs/cmake"
       for path in cmake_dir.glob("*.cmake"):
           text = path.read_text()
-          text = re.sub(r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*(?:host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include)[^"]*"', 'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/std_msgs"', text)
+          text = re.sub(r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*(?:host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include|libpython3)[^"]*"', 'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/std_msgs"', text)
           text = re.sub(r';?/usr/lib/riscv64-linux-gnu/libpython[^;"]*', '', text)
           path.write_text(text)
       PY
 
 requirements:
   build:
+    - cmake
     - patchelf
   host:
     - ament-cmake
     - builtin-interfaces
+    - numpy
+    - python
     - rosidl-default-generators
     - setuptools
   run:
     - ament-cmake
     - builtin-interfaces
+    - numpy
+    - python
     - rosidl-default-runtime
 
 # This recipe intentionally uses host cmake and compiler on the native riscv runner.
@@ -54,13 +59,9 @@ requirements:
 #   build:
 #     - c-compiler
 #     - cxx-compiler
-#     - cmake
 #     - make
-#   host:
-#     - python
 #   run:
 #     - libstdcxx
-#     - python
 
 tests:
   - script:
@@ -79,7 +80,7 @@ tests:
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - grep -q 'msg/Header.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - |
-        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include' "$PREFIX/share/${{ ros_name }}/cmake"; then
+        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include|libpython3' "$PREFIX/share/${{ ros_name }}/cmake"; then
           echo "${{ ros_name }} CMake exports contain non-relocatable include paths"
           exit 1
         fi
@@ -92,7 +93,7 @@ tests:
           message(FATAL_ERROR "missing Header.idl")
         endif()
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         cat > test_std_msgs.cpp <<'EOF'
         #include <std_msgs/msg/header.hpp>

@@ -13,11 +13,11 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 6
+  number: 8
   script:
     - cd ${{ source_dir }}
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_generator_py" "$PREFIX/share/rosidl_generator_py/cmake" "$PREFIX/share/rosidl_generator_py/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages"
     - cp -R rosidl_generator_py "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/rosidl_generator_py/package.xml"
@@ -28,13 +28,9 @@ build:
       import os
       import runpy
       import sys
-      import sysconfig
 
       prefix = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-      site_packages = sysconfig.get_path(
-          'purelib', scheme='posix_prefix',
-          vars={'base': prefix, 'platbase': prefix})
-      sys.path.insert(0, site_packages)
+      sys.path.insert(0, os.path.join(prefix, 'lib', 'python3.12', 'site-packages'))
       entry = os.path.join(prefix, 'lib', 'rosidl_generator_py', '_rosidl_generator_py_entry.py')
       sys.argv[0] = entry
       runpy.run_path(entry, run_name='__main__')
@@ -72,6 +68,8 @@ build:
 requirements:
   host:
     - ament-index-python
+    - numpy
+    - python
     - python-cmake-module
     - rosidl-cli
     - rosidl-generator-c
@@ -82,6 +80,8 @@ requirements:
     - rpyutils
   run:
     - ament-index-python
+    - numpy
+    - python
     - python-cmake-module
     - rosidl-cli
     - rosidl-generator-c
@@ -96,13 +96,15 @@ tests:
       - test -f $PREFIX/share/rosidl_generator_py/package.xml
       - test -x $PREFIX/lib/rosidl_generator_py/rosidl_generator_py
       - $PREFIX/lib/rosidl_generator_py/rosidl_generator_py --help >/dev/null
+      - $PREFIX/bin/python3.12 -c "import rosidl_generator_py; print('rosidl_generator_py ok')"
       - test -f $PREFIX/share/rosidl_generator_py/cmake/rosidl_generator_pyConfig.cmake
       - test -f $PREFIX/share/rosidl_generator_py/cmake/rosidl_generator_py_get_typesupports.cmake
-      - test -f $PREFIX/lib/python3.13/site-packages/rosidl_generator_py/generate_py_impl.py
+      - |
+        SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+        test -f "$SITE_PACKAGES/rosidl_generator_py/generate_py_impl.py"
 
 # future requirements:
 #   run:
-#     - numpy
 #     - rosidl-typesupport-c
 
 about:

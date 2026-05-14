@@ -13,11 +13,11 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 3
+  number: 5
   script:
     - cd ${{ source_dir }}
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
     - mkdir -p "$SITE_PACKAGES" "$PREFIX/lib/rosidl_generator_cpp" "$PREFIX/share/rosidl_generator_cpp/cmake" "$PREFIX/share/rosidl_generator_cpp/resource" "$PREFIX/share/ament_index/resource_index/packages" "$PREFIX/share/ament_index/resource_index/rosidl_generator_packages"
     - cp -R rosidl_generator_cpp "$SITE_PACKAGES/"
     - cp package.xml "$PREFIX/share/rosidl_generator_cpp/package.xml"
@@ -28,13 +28,9 @@ build:
       import os
       import runpy
       import sys
-      import sysconfig
 
       prefix = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-      site_packages = sysconfig.get_path(
-          'purelib', scheme='posix_prefix',
-          vars={'base': prefix, 'platbase': prefix})
-      sys.path.insert(0, site_packages)
+      sys.path.insert(0, os.path.join(prefix, 'lib', 'python3.12', 'site-packages'))
       entry = os.path.join(prefix, 'lib', 'rosidl_generator_cpp', '_rosidl_generator_cpp_entry.py')
       sys.argv[0] = entry
       runpy.run_path(entry, run_name='__main__')
@@ -73,6 +69,7 @@ build:
 requirements:
   host:
     - ament-index-python
+    - python
     - rosidl-cli
     - rosidl-cmake
     - rosidl-generator-c
@@ -81,6 +78,7 @@ requirements:
     - rosidl-runtime-cpp
   run:
     - ament-index-python
+    - python
     - rosidl-cli
     - rosidl-cmake
     - rosidl-generator-c
@@ -93,11 +91,8 @@ tests:
       - test -f $PREFIX/share/rosidl_generator_cpp/package.xml
       - test -x $PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp
       - $PREFIX/lib/rosidl_generator_cpp/rosidl_generator_cpp --help >/dev/null
+      - $PREFIX/bin/python3.12 -c "import rosidl_generator_cpp; print('rosidl_generator_cpp ok')"
       - test -f $PREFIX/share/rosidl_generator_cpp/cmake/rosidl_generator_cppConfig.cmake
-
-# future requirements:
-#   run:
-#     - python
 
 about:
   homepage: https://github.com/ros2/rosidl

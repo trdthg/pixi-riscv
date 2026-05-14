@@ -12,16 +12,16 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 4
+  number: 5
   script:
     - mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/share/rcutils/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - cp -R include/rcutils "$PREFIX/include/"
     - |
-      SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
       mkdir -p "$SITE_PACKAGES"
       cp -R rcutils "$SITE_PACKAGES/"
     - |
-      python3 - <<'PY'
+      $PREFIX/bin/python3.12 - <<'PY'
       from pathlib import Path
       import os
 
@@ -162,6 +162,12 @@ build:
       endif()
       EOF
 
+requirements:
+  host:
+    - python
+  run:
+    - python
+
 # requirements:
 #   build:
 #     - c-compiler
@@ -175,8 +181,8 @@ tests:
       - test -f $PREFIX/include/rcutils/logging_macros.h
       - test -f $PREFIX/share/ament_index/resource_index/packages/rcutils
       - |
-        SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
-        PYTHONPATH="$SITE_PACKAGES" python3 - <<'PY'
+        SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+        PYTHONPATH="$SITE_PACKAGES" $PREFIX/bin/python3.12 - <<'PY'
         from rcutils.logging import get_suffix_from_features
         assert get_suffix_from_features(('once', 'named')) == '_ONCE_NAMED'
         print('rcutils python ok')

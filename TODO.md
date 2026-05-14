@@ -40,6 +40,8 @@ Current policy:
   - Provides `find_packages` and setup helpers required by generated ament Python install steps.
 - [x] `lark`
   - Provides the parser backend required by `rosidl-parser`.
+- [ ] `pyyaml`
+  - Provides the Python `yaml` module required by `rosidl-cli`.
 - [x] `rpyutils`
   - Provides Python runtime utilities used by `rosidl-generator-py`.
 - [x] `empy`

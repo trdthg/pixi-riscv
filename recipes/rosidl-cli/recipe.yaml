@@ -46,8 +46,10 @@ build:
 
 requirements:
   host:
+    - pyyaml
     - python
   run:
+    - pyyaml
     - python
 #     - argcomplete
 

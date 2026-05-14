@@ -1,0 +1,49 @@
+context:
+  name: "pyyaml"
+  python_name: "yaml"
+  version: "6.0.2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/pyyaml/pyyaml-${{ version }}.tar.gz
+  sha256: d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e
+
+build:
+  number: 0
+  script:
+    - |
+      SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+    - mkdir -p "$SITE_PACKAGES"
+    - cp -R lib/${{ python_name }} "$SITE_PACKAGES/"
+    - mkdir -p "$SITE_PACKAGES/PyYAML-${{ version }}.dist-info"
+    - |
+      cat > "$SITE_PACKAGES/PyYAML-${{ version }}.dist-info/METADATA" <<'EOF'
+      Metadata-Version: 2.1
+      Name: PyYAML
+      Version: ${{ version }}
+      Summary: YAML parser and emitter for Python
+      EOF
+
+requirements:
+  host:
+    - python
+  run:
+    - python
+
+tests:
+  - script:
+      - $PREFIX/bin/python3.12 -c "import yaml; assert yaml.safe_load('a: 1')['a'] == 1; print('pyyaml ok')"
+
+about:
+  homepage: https://pyyaml.org/
+  repository: https://github.com/yaml/pyyaml
+  summary: YAML parser and emitter for Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

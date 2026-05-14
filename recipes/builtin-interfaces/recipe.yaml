@@ -20,8 +20,8 @@ build:
     - |
       SITE_PACKAGES=$(python3 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
       export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
-    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
+    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - cmake --build build --target install -- -j"$(nproc)"
     - |
       python3 - <<'PY'
       import os
@@ -42,12 +42,10 @@ requirements:
     - patchelf
   host:
     - ament-cmake
-    - cmake
     - rosidl-default-generators
     - setuptools
   run:
     - ament-cmake
-    - cmake
     - rosidl-default-runtime
 
 # This recipe intentionally uses host cmake and compiler on the native riscv runner.
@@ -89,7 +87,7 @@ tests:
           message(FATAL_ERROR "missing Time.idl")
         endif()
         EOF
-      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         cat > test_builtin_interfaces.cpp <<'EOF'
         #include <builtin_interfaces/msg/time.hpp>

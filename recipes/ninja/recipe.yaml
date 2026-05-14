@@ -1,0 +1,44 @@
+context:
+  name: "ninja"
+  version: "1.12.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ninja-build/ninja/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 821bdff48a3f683bc4bb3b6f0b5fe7b2d647cf65d52aeb63328c91a6c6df285a
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - python3 configure.py --bootstrap
+    - mkdir -p "$PREFIX/bin"
+    - cp ninja "$PREFIX/bin/ninja"
+
+# Bootstrap package: uses the host compiler and host Python on the native riscv
+# runner. Enable the Python dependency once the channel's Python package is used
+# for build tools.
+# future requirements:
+#   build:
+#     - cxx-compiler
+#     - python
+
+tests:
+  - script:
+      - test -x $PREFIX/bin/ninja
+      - $PREFIX/bin/ninja --version
+
+about:
+  homepage: https://ninja-build.org/
+  repository: https://github.com/ninja-build/ninja
+  summary: Small build system with a focus on speed
+  license: Apache-2.0
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - trdthg

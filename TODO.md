@@ -21,6 +21,10 @@ Current policy:
   - First target is CPython 3.12.x to match the current RoboStack Humble `py312` ABI choice.
   - Bootstrap dependency chain likely includes at least `openssl`, `zlib`, `bzip2`, `xz`, `libffi`, `sqlite`, `readline`, and `ncurses` if we want a relocatable conda-style Python.
   - A host-linked CPython package is possible as an intermediate step, but it should be marked as bootstrap-only because it depends on the runner/system libraries.
+- [ ] `make`
+  - Bootstrap GNU Make so recipes can stop assuming a system `make`.
+- [ ] `ninja`
+  - Bootstrap Ninja for CMake projects that prefer the Ninja generator.
 
 ## P0: Completed Bootstrap Packages
 

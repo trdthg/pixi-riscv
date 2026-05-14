@@ -1,0 +1,41 @@
+context:
+  name: "make"
+  version: "4.4.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/make/make-${{ version }}.tar.gz
+  sha256: dd16fb1d67bfab79a72f5e8390735c49e3e8e70b4945a15ab1f81ddb78658fb3
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - ./configure --prefix="$PREFIX"
+    - make -j"$(nproc)"
+    - make install
+
+# Bootstrap package: uses the host compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+
+tests:
+  - script:
+      - test -x $PREFIX/bin/make
+      - $PREFIX/bin/make --version
+
+about:
+  homepage: https://www.gnu.org/software/make/
+  repository: https://git.savannah.gnu.org/cgit/make.git
+  summary: GNU Make build automation tool
+  license: GPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - trdthg

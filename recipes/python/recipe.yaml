@@ -1,0 +1,78 @@
+context:
+  name: "python"
+  version: "3.12.13"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
+  sha256: c08bc65a81971c1dd5783182826503369466c7e67374d1646519adf05207b684
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - |
+      export LDFLAGS="${LDFLAGS:-} -Wl,-rpath,$PREFIX/lib"
+      ./configure \
+        --prefix="$PREFIX" \
+        --enable-shared \
+        --without-ensurepip \
+        --with-system-ffi
+    - make -j"$(nproc)"
+    - make install
+    - ln -sf python3.12 "$PREFIX/bin/python"
+    - ln -sf python3.12 "$PREFIX/bin/python3"
+
+# Bootstrap package: this intentionally uses the host compiler and host system
+# development libraries on the native riscv runner. It fixes the Python ABI and
+# site-packages path for ROS packages, but it is not a fully relocatable
+# conda-forge-style Python yet.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - make
+#   host:
+#     - bzip2
+#     - libexpat
+#     - libffi
+#     - liblzma
+#     - libsqlite
+#     - ncurses
+#     - openssl
+#     - readline
+#     - tk
+#     - zlib
+#   run:
+#     - bzip2
+#     - libexpat
+#     - libffi
+#     - liblzma
+#     - libsqlite
+#     - ncurses
+#     - openssl
+#     - readline
+#     - tk
+#     - zlib
+
+tests:
+  - script:
+      - test -x $PREFIX/bin/python3.12
+      - $PREFIX/bin/python3.12 --version
+      - $PREFIX/bin/python3.12 -c "import sys; assert sys.version_info[:2] == (3, 12)"
+      - $PREFIX/bin/python3.12 -c "import sysconfig; print(sysconfig.get_path('purelib'))"
+      - test -f $PREFIX/lib/libpython3.12.so
+
+about:
+  homepage: https://www.python.org/
+  repository: https://github.com/python/cpython
+  summary: CPython interpreter bootstrap build for linux-riscv64
+  license: Python-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

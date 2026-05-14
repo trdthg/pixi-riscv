@@ -18,6 +18,7 @@ Current policy:
   - Bootstrap with host compiler and CMake's own `bootstrap` script so future recipes can depend on `$PREFIX/bin/cmake`.
 - [ ] `python`
   - Preferred long-term fix for Python path instability. Package CPython into the channel, then make Python packages depend on it and install into `$PREFIX/lib/pythonX.Y/site-packages`.
+  - First target is CPython 3.12.x to match the current RoboStack Humble `py312` ABI choice.
   - Bootstrap dependency chain likely includes at least `openssl`, `zlib`, `bzip2`, `xz`, `libffi`, `sqlite`, `readline`, and `ncurses` if we want a relocatable conda-style Python.
   - A host-linked CPython package is possible as an intermediate step, but it should be marked as bootstrap-only because it depends on the runner/system libraries.
 

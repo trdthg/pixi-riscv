@@ -60,7 +60,22 @@ build:
         done
       done
 
-      ln -sfn "$sysroot" "$PREFIX/${{ target }}/sysroot"
+      python3 - <<'PY'
+      import os
+      from pathlib import Path
+
+      sysroot = Path(os.environ["PREFIX"]) / "${{ sysroot_dir }}"
+      for link in sysroot.rglob("*"):
+          if not link.is_symlink():
+              continue
+          target = os.readlink(link)
+          if not target.startswith(("/lib/", "/usr/lib/")):
+              continue
+          absolute_target = sysroot / target.lstrip("/")
+          relative_target = os.path.relpath(absolute_target, link.parent)
+          link.unlink()
+          link.symlink_to(relative_target)
+      PY
 
 # Bootstrap package: this packages a fixed Ubuntu 22.04 riscv64 sysroot instead
 # of building glibc. It intentionally uses host curl/ar/tar/zstd during build.
@@ -81,7 +96,7 @@ tests:
       - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libc.so.6"
       - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1"
       - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libstdc++.so.6"
-      - test -L "$PREFIX/${{ target }}/sysroot"
+      - test -d "$PREFIX/${{ target }}/sysroot"
       - strings "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libc.so.6" > glibc-versions.txt
       - grep -q '^GLIBC_2\.35$' glibc-versions.txt
 

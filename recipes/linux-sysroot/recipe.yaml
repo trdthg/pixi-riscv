@@ -95,7 +95,7 @@ tests:
       - test -f "$PREFIX/${{ sysroot_dir }}/usr/lib/riscv64-linux-gnu/libc.so"
       - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libc.so.6"
       - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1"
-      - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libstdc++.so.6"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/lib/riscv64-linux-gnu/libstdc++.so.6"
       - test -d "$PREFIX/${{ target }}/sysroot"
       - strings "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libc.so.6" > glibc-versions.txt
       - grep -q '^GLIBC_2\.35$' glibc-versions.txt

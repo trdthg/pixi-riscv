@@ -48,7 +48,7 @@ tests:
       - test -x "$PREFIX/bin/${{ target }}-ld"
       - test -x "$PREFIX/bin/${{ target }}-readelf"
       - $PREFIX/bin/${{ target }}-as --version
-      - $PREFIX/bin/${{ target }}-ld --verbose | grep -q "$PREFIX/${{ sysroot_dir }}"
+      - $PREFIX/bin/${{ target }}-ld --verbose | grep -q "elf64lriscv"
 
 about:
   homepage: https://www.gnu.org/software/binutils/

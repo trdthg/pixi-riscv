@@ -1,0 +1,138 @@
+context:
+  name: "nav-msgs"
+  ros_name: "nav_msgs"
+  version: "4.9.1"
+  git_rev: "c3072dba174f18d41b64fcbbb20bed47a86e9898"
+  source_dir: "nav_msgs"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/ros2/common_interfaces.git
+  rev: ${{ git_rev }}
+
+build:
+  number: 0
+  script:
+    - cd ${{ source_dir }}
+    - |
+      SITE_PACKAGES=$("$PREFIX/bin/python3.12" -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
+      export PYTHONPATH="$SITE_PACKAGES${PYTHONPATH:+:$PYTHONPATH}"
+    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DPython3_EXECUTABLE="$PREFIX/bin/python3.12" -DPYTHON_EXECUTABLE="$PREFIX/bin/python3.12"
+    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
+    - |
+      "$PREFIX/bin/python3.12" - <<'PY'
+      import os
+      import re
+      from pathlib import Path
+
+      cmake_dir = Path(os.environ["PREFIX"]) / "share/nav_msgs/cmake"
+      for path in cmake_dir.glob("*.cmake"):
+          text = path.read_text()
+          text = text.replace('/usr/lib/riscv64-linux-gnu/python3-numpy/numpy/_core/include', '${_IMPORT_PREFIX}/lib/python3.12/site-packages/numpy/_core/include')
+          text = re.sub(r'[^;"]*host_env_placehold[^;"]*numpy[^;"]*', '${_IMPORT_PREFIX}/lib/python3.12/site-packages/numpy/_core/include', text)
+          text = re.sub(r'/usr/lib/riscv64-linux-gnu/libpython[0-9.]*\.so', '${_IMPORT_PREFIX}/lib/libpython3.12.so', text)
+          text = re.sub(r'[^;"]*host_env_placehold[^;"]*libpython[0-9.]*\.so', '${_IMPORT_PREFIX}/lib/libpython3.12.so', text)
+          path.write_text(text)
+      PY
+
+requirements:
+  build:
+    - cmake
+    - patchelf
+  host:
+    - ament-cmake
+    - builtin-interfaces
+    - geometry-msgs
+    - numpy
+    - python
+    - rosidl-default-generators
+    - setuptools
+    - std-msgs
+  run:
+    - ament-cmake
+    - builtin-interfaces
+    - geometry-msgs
+    - numpy
+    - python
+    - rosidl-default-runtime
+    - std-msgs
+
+# This recipe intentionally uses the host compiler on the native riscv runner.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - make
+#   run:
+#     - libstdcxx
+
+tests:
+  - script:
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Odometry.msg
+      - test -f $PREFIX/share/${{ ros_name }}/msg/Odometry.idl
+      - test -f $PREFIX/share/${{ ros_name }}/msg/OccupancyGrid.msg
+      - test -f $PREFIX/share/${{ ros_name }}/msg/OccupancyGrid.idl
+      - test -f $PREFIX/share/${{ ros_name }}/srv/GetMap.srv
+      - test -f $PREFIX/share/${{ ros_name }}/srv/GetMap.idl
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/odometry.h
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/odometry.hpp
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/occupancy_grid.h
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/msg/occupancy_grid.hpp
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/srv/get_map.h
+      - test -f $PREFIX/include/${{ ros_name }}/${{ ros_name }}/srv/get_map.hpp
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_generator_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_c.so
+      - test -f $PREFIX/lib/lib${{ ros_name }}__rosidl_typesupport_cpp.so
+      - test -f $PREFIX/share/ament_index/resource_index/packages/${{ ros_name }}
+      - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - grep -q 'msg/Odometry.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - grep -q 'srv/GetMap.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
+      - |
+        if grep -R -E 'host_env_placehold|python3-numpy|/usr/lib/riscv64-linux-gnu/(python|libpython)|libpython3\.13' "$PREFIX/share/${{ ros_name }}/cmake"; then
+          echo "${{ ros_name }} CMake exports contain system Python/numpy paths"
+          exit 1
+        fi
+      - |
+        cat > CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(test_nav_msgs C CXX)
+        find_package(nav_msgs REQUIRED)
+        if(NOT "msg/Odometry.idl" IN_LIST nav_msgs_IDL_FILES)
+          message(FATAL_ERROR "missing Odometry.idl")
+        endif()
+        if(NOT "srv/GetMap.idl" IN_LIST nav_msgs_IDL_FILES)
+          message(FATAL_ERROR "missing GetMap.idl")
+        endif()
+        EOF
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - |
+        cat > test_nav_msgs.cpp <<'EOF'
+        #include <nav_msgs/msg/odometry.hpp>
+        #include <nav_msgs/msg/path.hpp>
+        int main() {
+          nav_msgs::msg::Odometry odom;
+          nav_msgs::msg::Path path;
+          odom.header.frame_id = "odom";
+          odom.child_frame_id = "base_link";
+          path.header.frame_id = "map";
+          return odom.header.frame_id == "odom" &&
+            odom.child_frame_id == "base_link" &&
+            path.header.frame_id == "map" ? 0 : 1;
+        }
+        EOF
+      - c++ -std=c++14 -I$PREFIX/include -I$PREFIX/include/nav_msgs -I$PREFIX/include/geometry_msgs -I$PREFIX/include/std_msgs -I$PREFIX/include/builtin_interfaces test_nav_msgs.cpp -o test_nav_msgs
+      - ./test_nav_msgs
+
+about:
+  homepage: https://github.com/ros2/common_interfaces
+  repository: https://github.com/ros2/common_interfaces
+  summary: Navigation message and service definitions for ROS 2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - trdthg

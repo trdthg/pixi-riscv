@@ -99,6 +99,7 @@ jobs:
               'recipes/unique-identifier-msgs': 410,
               'recipes/std-msgs': 420,
               'recipes/geometry-msgs': 430,
+              'recipes/nav-msgs': 435,
               'recipes/action-msgs': 440,
               'recipes/rcl-interfaces': 441,
               'recipes/service-msgs': 442,

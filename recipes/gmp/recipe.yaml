@@ -19,6 +19,10 @@ build:
     - make -j"$(nproc)"
     - make install
 
+requirements:
+  build:
+    - m4
+
 # Bootstrap package: uses host compiler and make.
 # future requirements:
 #   build:

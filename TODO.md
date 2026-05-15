@@ -22,6 +22,8 @@ Current policy:
 - [ ] `gcc`
   - First bootstrap target is a monolithic GCC 13 C/C++ compiler using `linux-sysroot`.
   - Long term, split into conda-forge-like compiler/runtime packages (`gcc_impl`, `gxx_impl`, `libgcc-ng`, `libstdcxx-ng`, activation packages).
+- [ ] `m4`
+  - GMP build dependency.
 - [ ] `gmp`
   - GCC build dependency.
 - [ ] `mpfr`

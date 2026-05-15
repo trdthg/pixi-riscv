@@ -13,7 +13,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 1
+  number: 2
   script:
     - |
       SITE_PACKAGES=$($PREFIX/bin/python3.12 -c 'import os, sysconfig; print(sysconfig.get_path("purelib", scheme="posix_prefix", vars={"base": os.environ["PREFIX"], "platbase": os.environ["PREFIX"]}))')
@@ -27,14 +27,16 @@ build:
       import re
       from pathlib import Path
 
-      export_file = Path(os.environ["PREFIX"]) / "share/rclcpp/cmake/rclcppExport.cmake"
-      text = export_file.read_text()
-      text = re.sub(
-          r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*"',
-          'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/rclcpp"',
-          text,
-      )
-      export_file.write_text(text)
+      cmake_dir = Path(os.environ["PREFIX"]) / "share/rclcpp/cmake"
+      for path in cmake_dir.glob("*.cmake"):
+          text = path.read_text()
+          text = re.sub(
+              r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*(?:host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include|libpython3)[^"]*"',
+              'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/rclcpp"',
+              text,
+          )
+          text = re.sub(r';?/usr/lib/riscv64-linux-gnu/libpython[^;"]*', '', text)
+          path.write_text(text)
       PY
 
 requirements:
@@ -48,6 +50,7 @@ requirements:
     - cmake
     - empy
     - libstatistics-collector
+    - numpy
     - python
     - rcl
     - rcl-interfaces
@@ -67,6 +70,7 @@ requirements:
     - ament-index-cpp
     - builtin-interfaces
     - libstatistics-collector
+    - numpy
     - rcl
     - rcl-interfaces
     - rcl-yaml-param-parser
@@ -96,7 +100,7 @@ tests:
       - test -f $PREFIX/include/rclcpp/rclcpp/rclcpp.hpp
       - test -f $PREFIX/share/rclcpp/cmake/rclcppConfig.cmake
       - |
-        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include' "$PREFIX/share/rclcpp/cmake"; then
+        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include|libpython3' "$PREFIX/share/rclcpp/cmake"; then
           echo "rclcpp CMake exports contain non-relocatable include paths"
           exit 1
         fi

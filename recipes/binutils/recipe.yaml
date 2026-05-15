@@ -26,8 +26,8 @@ build:
         --with-sysroot="$PREFIX/${{ sysroot_dir }}" \
         --disable-nls \
         --disable-werror
-    - make -j"$(nproc)"
-    - make install
+    - make -j"$(nproc)" MAKEINFO=true
+    - make install MAKEINFO=true
 
 requirements:
   host:

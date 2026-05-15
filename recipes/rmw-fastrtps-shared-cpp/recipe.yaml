@@ -14,14 +14,15 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
-    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-    - cmake --build build --target install -- -j"$(nproc)"
+    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
 
 requirements:
   build:
+    - cmake
     - patchelf
   host:
     - ament-cmake-gmock
@@ -52,11 +53,10 @@ requirements:
     - rosidl-typesupport-introspection-cpp
     - tracetools
 
-# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# This recipe intentionally uses the host compiler on the native riscv runner.
 # future requirements:
 #   build:
 #     - cxx-compiler
-#     - cmake
 #     - make
 #   run:
 #     - libstdcxx
@@ -73,7 +73,7 @@ tests:
         project(test_rmw_fastrtps_shared_cpp CXX)
         find_package(rmw_fastrtps_shared_cpp REQUIRED)
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         missing=$(ldd -r $PREFIX/lib/librmw_fastrtps_shared_cpp.so 2>&1 | grep 'undefined symbol' || true)
         test -z "$missing" || { echo "$missing"; exit 1; }

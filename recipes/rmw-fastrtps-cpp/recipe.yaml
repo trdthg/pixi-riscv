@@ -14,14 +14,15 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 0
+  number: 1
   script:
     - cd ${{ source_dir }}
-    - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-    - cmake --build build --target install -- -j"$(nproc)"
+    - $PREFIX/bin/cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    - $PREFIX/bin/cmake --build build --target install -- -j"$(nproc)"
 
 requirements:
   build:
+    - cmake
     - patchelf
   host:
     - ament-cmake-ros
@@ -62,11 +63,10 @@ requirements:
     - rosidl-typesupport-introspection-cpp
     - tracetools
 
-# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# This recipe intentionally uses the host compiler on the native riscv runner.
 # future requirements:
 #   build:
 #     - cxx-compiler
-#     - cmake
 #     - make
 #   run:
 #     - libstdcxx
@@ -86,7 +86,21 @@ tests:
         project(test_rmw_fastrtps_cpp CXX)
         find_package(rmw_fastrtps_cpp REQUIRED)
         EOF
-      - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
+      - |
+        for symbol in \
+          rmw_count_clients \
+          rmw_count_services \
+          rmw_get_gid_for_client \
+          rmw_take_dynamic_message \
+          rmw_take_dynamic_message_with_info \
+          rmw_serialization_support_init
+        do
+          nm -D $PREFIX/lib/librmw_fastrtps_cpp.so | grep -q " $symbol$" || {
+            echo "missing exported RMW symbol: $symbol"
+            exit 1
+          }
+        done
       - |
         missing=$(ldd -r $PREFIX/lib/librmw_fastrtps_cpp.so 2>&1 | grep 'undefined symbol' || true)
         test -z "$missing" || { echo "$missing"; exit 1; }

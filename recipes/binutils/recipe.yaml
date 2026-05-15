@@ -1,0 +1,61 @@
+context:
+  name: "binutils"
+  version: "2.42"
+  target: "riscv64-conda-linux-gnu"
+  sysroot_dir: "riscv64-conda-linux-gnu/sysroot"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/binutils/binutils-${{ version }}.tar.xz
+  sha256: f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - mkdir build
+    - cd build
+    - |
+      ../configure \
+        --prefix="$PREFIX" \
+        --target="${{ target }}" \
+        --with-sysroot="$PREFIX/${{ sysroot_dir }}" \
+        --disable-nls \
+        --disable-werror
+    - make -j"$(nproc)"
+    - make install
+
+requirements:
+  host:
+    - linux-sysroot
+  run:
+    - linux-sysroot
+
+# Bootstrap package: uses the host compiler and host make on the native riscv
+# runner. It provides target-prefixed tools for the packaged GCC bootstrap.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - make
+
+tests:
+  - script:
+      - test -x "$PREFIX/bin/${{ target }}-as"
+      - test -x "$PREFIX/bin/${{ target }}-ld"
+      - test -x "$PREFIX/bin/${{ target }}-readelf"
+      - $PREFIX/bin/${{ target }}-as --version
+      - $PREFIX/bin/${{ target }}-ld --verbose | grep -q "$PREFIX/${{ sysroot_dir }}"
+
+about:
+  homepage: https://www.gnu.org/software/binutils/
+  repository: https://sourceware.org/git/binutils-gdb.git
+  summary: GNU binary utilities targeting riscv64 conda Linux
+  license: GPL-3.0-or-later
+
+extra:
+  recipe-maintainers:
+    - trdthg

@@ -1,0 +1,48 @@
+context:
+  name: "mpfr"
+  version: "4.2.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/mpfr/mpfr-${{ version }}.tar.xz
+  sha256: 277807353a6726978996945af13e52829e3abd7a9a5b7fb2793894e18f1fcbb2
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - ./configure --prefix="$PREFIX" --with-gmp="$PREFIX" --disable-static
+    - make -j"$(nproc)"
+    - make install
+
+requirements:
+  host:
+    - gmp
+  run:
+    - gmp
+
+# Bootstrap package: uses host compiler and make.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - make
+
+tests:
+  - script:
+      - test -f "$PREFIX/include/mpfr.h"
+      - test -f "$PREFIX/lib/libmpfr.so"
+
+about:
+  homepage: https://www.mpfr.org/
+  repository: https://gitlab.inria.fr/mpfr/mpfr
+  summary: Multiple-precision floating-point library
+  license: LGPL-3.0-or-later
+  license_file: COPYING.LESSER
+
+extra:
+  recipe-maintainers:
+    - trdthg

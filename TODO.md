@@ -14,6 +14,20 @@ Current policy:
 
 ## P-1: Conda Runtime Bootstrap
 
+- [ ] `linux-sysroot`
+  - Bootstrap a fixed Ubuntu 22.04/Jammy `riscv64` sysroot with glibc 2.35.
+  - This is the first ABI baseline package for builds that should not inherit the runner's newer glibc.
+- [ ] `binutils`
+  - Bootstrap target-prefixed `riscv64-conda-linux-gnu-*` binary tools against the packaged sysroot.
+- [ ] `gcc`
+  - First bootstrap target is a monolithic GCC 13 C/C++ compiler using `linux-sysroot`.
+  - Long term, split into conda-forge-like compiler/runtime packages (`gcc_impl`, `gxx_impl`, `libgcc-ng`, `libstdcxx-ng`, activation packages).
+- [ ] `gmp`
+  - GCC build dependency.
+- [ ] `mpfr`
+  - GCC build dependency.
+- [ ] `mpc`
+  - GCC build dependency.
 - [x] `cmake`
   - Bootstrap with host compiler and CMake's own `bootstrap` script so future recipes can depend on `$PREFIX/bin/cmake`.
 - [ ] `python`

@@ -1,0 +1,96 @@
+context:
+  name: "linux-sysroot"
+  version: "2.35"
+  build_id: "ubuntu22.04"
+  target: "riscv64-conda-linux-gnu"
+  sysroot_dir: "riscv64-conda-linux-gnu/sysroot"
+  ubuntu_base_url: "http://ports.ubuntu.com/ubuntu-ports"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - |
+      set -euo pipefail
+
+      mkdir -p "$PREFIX/${{ sysroot_dir }}" /tmp/sysroot-debs
+      cd /tmp/sysroot-debs
+
+      download_deb() {
+        local path="$1"
+        local sha256="$2"
+        local file="${path##*/}"
+
+        curl -fsSLO "${{ ubuntu_base_url }}/${path}"
+        echo "${sha256}  ${file}" | sha256sum -c -
+        ar p "${file}" data.tar.zst | tar --zstd -xf - -C "$PREFIX/${{ sysroot_dir }}"
+      }
+
+      # Ubuntu 22.04/Jammy riscv64 glibc 2.35 sysroot. This fixes the ABI
+      # baseline for packages built with the packaged compiler.
+      download_deb "pool/main/g/glibc/libc6_2.35-0ubuntu3.13_riscv64.deb" "0dc172c8b191522eccd7f271e1ff12ea982a36eb319c39e199027059ecc4a3db"
+      download_deb "pool/main/g/glibc/libc6-dev_2.35-0ubuntu3.13_riscv64.deb" "0b514ddf0e22ed2db65ed5ccf2d6cecb80cc9db1ad4ae5ae5078dece30a057b4"
+      download_deb "pool/main/g/glibc/libc-dev-bin_2.35-0ubuntu3.13_riscv64.deb" "531043c2e69ca9c2f28e9a34daca5710c40d394fe9812e2fcde56543a7417945"
+      download_deb "pool/main/l/linux/linux-libc-dev_5.15.0-179.189_riscv64.deb" "178e797a6b89768e854b0753e834a2b27412038fb86a4afec79c123f15c9ad8c"
+      download_deb "pool/main/libx/libxcrypt/libcrypt1_4.4.27-1_riscv64.deb" "acaa7d875121837c13978402ca376da469930b86b5a198a0cac66ddf54f9e64c"
+      download_deb "pool/main/libx/libxcrypt/libcrypt-dev_4.4.27-1_riscv64.deb" "29d78c3750eea74ce21dbc7fe4c8e4f38d71e2fa6e55d2febf49a8d5212671ba"
+      download_deb "pool/main/g/gcc-12/gcc-12-base_12.3.0-1ubuntu1~22.04.3_riscv64.deb" "9721f92f1665a9132bd26a734c756f23e5acd92dc2a9d42482f4320964e67dce"
+      download_deb "pool/main/g/gcc-12/libgcc-s1_12.3.0-1ubuntu1~22.04.3_riscv64.deb" "8feaf9d51117f964395550b43d5e5b0b3e31e9b626e7b6c4c6be9a1cfe002462"
+      download_deb "pool/main/g/gcc-12/libstdc++6_12.3.0-1ubuntu1~22.04.3_riscv64.deb" "cde381b1d4ef94d3f86a7932d217d9661d00962f7a79077e1bf233bc5b74dd66"
+
+      sysroot="$PREFIX/${{ sysroot_dir }}"
+      mkdir -p "$PREFIX/share/linux-sysroot" "$PREFIX/${{ target }}"
+      printf '%s\n' "${{ build_id }}" > "$PREFIX/share/linux-sysroot/source"
+      printf '%s\n' "$sysroot" > "$PREFIX/share/linux-sysroot/sysroot"
+
+      # GCC configured with a non-Debian target triplet may not automatically
+      # search Debian multiarch library directories. Add compatibility symlinks
+      # while keeping the original sysroot layout intact.
+      for dir in "$sysroot/usr/lib/riscv64-linux-gnu" "$sysroot/lib/riscv64-linux-gnu"; do
+        [ -d "$dir" ] || continue
+        parent="${dir%/riscv64-linux-gnu}"
+        find "$dir" -maxdepth 1 \( -type f -o -type l \) | while read -r item; do
+          base="$(basename "$item")"
+          [ -e "$parent/$base" ] || ln -s "riscv64-linux-gnu/$base" "$parent/$base"
+        done
+      done
+
+      ln -sfn "$sysroot" "$PREFIX/${{ target }}/sysroot"
+
+# Bootstrap package: this packages a fixed Ubuntu 22.04 riscv64 sysroot instead
+# of building glibc. It intentionally uses host curl/ar/tar/zstd during build.
+# future requirements:
+#   build:
+#     - curl
+#     - binutils
+#     - tar
+#     - zstd
+
+tests:
+  - script:
+      - test -d "$PREFIX/${{ sysroot_dir }}/usr/include"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/include/features.h"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/include/linux/version.h"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/lib/riscv64-linux-gnu/crt1.o"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/lib/riscv64-linux-gnu/libc.so"
+      - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libc.so.6"
+      - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1"
+      - test -f "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libstdc++.so.6"
+      - test -L "$PREFIX/${{ target }}/sysroot"
+      - strings "$PREFIX/${{ sysroot_dir }}/lib/riscv64-linux-gnu/libc.so.6" > glibc-versions.txt
+      - grep -q '^GLIBC_2\.35$' glibc-versions.txt
+
+about:
+  homepage: https://ubuntu.com/
+  repository: http://ports.ubuntu.com/ubuntu-ports/
+  summary: Ubuntu 22.04 riscv64 glibc 2.35 sysroot for bootstrap compiler builds
+  license: GPL-2.0-or-later AND LGPL-2.1-or-later
+
+extra:
+  recipe-maintainers:
+    - trdthg

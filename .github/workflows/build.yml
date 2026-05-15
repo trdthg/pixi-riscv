@@ -73,11 +73,17 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           order = {
+              'recipes/linux-sysroot': 1,
+              'recipes/binutils': 2,
+              'recipes/gmp': 3,
+              'recipes/mpfr': 4,
+              'recipes/mpc': 5,
               'recipes/cmake': 5,
               'recipes/python': 6,
               'recipes/make': 7,
               'recipes/ninja': 8,
               'recipes/numpy': 9,
+              'recipes/gcc': 11,
               'recipes/pyparsing': 10,
               'recipes/setuptools': 12,
               'recipes/lark': 13,

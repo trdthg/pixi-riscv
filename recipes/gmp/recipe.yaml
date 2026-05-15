@@ -1,0 +1,44 @@
+context:
+  name: "gmp"
+  version: "6.3.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/gmp/gmp-${{ version }}.tar.xz
+  sha256: a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - ./configure --prefix="$PREFIX" --enable-cxx --disable-static
+    - make -j"$(nproc)"
+    - make install
+
+# Bootstrap package: uses host compiler and make.
+# future requirements:
+#   build:
+#     - c-compiler
+#     - cxx-compiler
+#     - make
+
+tests:
+  - script:
+      - test -f "$PREFIX/include/gmp.h"
+      - test -f "$PREFIX/lib/libgmp.so"
+      - test -f "$PREFIX/lib/libgmpxx.so"
+
+about:
+  homepage: https://gmplib.org/
+  repository: https://gmplib.org/repo/gmp/
+  summary: GNU multiple precision arithmetic library
+  license: LGPL-3.0-or-later OR GPL-2.0-or-later
+  license_file: COPYING.LESSERv3
+
+extra:
+  recipe-maintainers:
+    - trdthg

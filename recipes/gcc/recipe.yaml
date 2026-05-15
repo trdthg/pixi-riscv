@@ -1,0 +1,132 @@
+context:
+  name: "gcc"
+  version: "13.2.0"
+  target: "riscv64-conda-linux-gnu"
+  sysroot_dir: "riscv64-conda-linux-gnu/sysroot"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/gcc/gcc-${{ version }}/gcc-${{ version }}.tar.xz
+  sha256: e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - mkdir build
+    - cd build
+    - |
+      export PATH="$PREFIX/bin:$PATH"
+      export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      ../configure \
+        --prefix="$PREFIX" \
+        --target="${{ target }}" \
+        --with-sysroot="$PREFIX/${{ sysroot_dir }}" \
+        --with-native-system-header-dir=/usr/include \
+        --with-gmp="$PREFIX" \
+        --with-mpfr="$PREFIX" \
+        --with-mpc="$PREFIX" \
+        --with-arch=rv64gc \
+        --with-abi=lp64d \
+        --enable-languages=c,c++ \
+        --disable-bootstrap \
+        --disable-multilib \
+        --disable-nls \
+        --disable-libsanitizer \
+        --disable-libquadmath \
+        --without-isl \
+        --without-zstd
+    - |
+      export PATH="$PREFIX/bin:$PATH"
+      export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      "$PREFIX/bin/make" -j"$(nproc)" all-gcc all-target-libgcc all-target-libstdc++-v3
+    - |
+      export PATH="$PREFIX/bin:$PATH"
+      export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      "$PREFIX/bin/make" install-gcc install-target-libgcc install-target-libstdc++-v3
+    - ln -sf "${{ target }}-gcc" "$PREFIX/bin/gcc"
+    - ln -sf "${{ target }}-g++" "$PREFIX/bin/g++"
+
+requirements:
+  build:
+    - make
+  host:
+    - binutils
+    - gmp
+    - linux-sysroot
+    - mpc
+    - mpfr
+  run:
+    - binutils
+    - gmp
+    - linux-sysroot
+    - mpc
+    - mpfr
+    - make
+
+# Bootstrap package: monolithic C/C++ compiler using the host compiler to build
+# GCC, then targeting the packaged glibc 2.35 sysroot. Long term, split this
+# into compiler/runtime packages similar to conda-forge.
+# future split:
+#   - gcc_impl_linux-riscv64
+#   - gxx_impl_linux-riscv64
+#   - gcc_linux-riscv64
+#   - gxx_linux-riscv64
+#   - libgcc-ng
+#   - libstdcxx-ng
+
+tests:
+  - script:
+      - test -x "$PREFIX/bin/${{ target }}-gcc"
+      - test -x "$PREFIX/bin/${{ target }}-g++"
+      - $PREFIX/bin/${{ target }}-gcc --version
+      - $PREFIX/bin/${{ target }}-g++ --version
+      - $PREFIX/bin/${{ target }}-gcc -print-sysroot | grep -q "$PREFIX/${{ sysroot_dir }}"
+      - |
+        cat > hello.c <<'EOF'
+        #include <stdio.h>
+        int main(void) {
+          puts("hello-c");
+          return 0;
+        }
+        EOF
+      - $PREFIX/bin/${{ target }}-gcc hello.c -o hello-c
+      - $PREFIX/bin/${{ target }}-readelf -l hello-c | grep -q 'ld-linux-riscv64-lp64d.so.1'
+      - |
+        cat > hello.cpp <<'EOF'
+        #include <iostream>
+        #include <vector>
+        int main() {
+          std::vector<int> values{1, 2, 3};
+          std::cout << values.size() << "\n";
+          return values.size() == 3 ? 0 : 1;
+        }
+        EOF
+      - $PREFIX/bin/${{ target }}-g++ hello.cpp -o hello-cxx
+      - $PREFIX/bin/${{ target }}-readelf -d hello-cxx | grep -q 'libstdc++'
+      - |
+        sysroot="$PREFIX/${{ sysroot_dir }}"
+        target_lib="$PREFIX/${{ target }}/lib64"
+        "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
+          --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
+          ./hello-c
+      - |
+        sysroot="$PREFIX/${{ sysroot_dir }}"
+        target_lib="$PREFIX/${{ target }}/lib64"
+        "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
+          --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
+          ./hello-cxx
+
+about:
+  homepage: https://gcc.gnu.org/
+  repository: https://gcc.gnu.org/git/gcc.git
+  summary: Bootstrap GCC C/C++ compiler targeting riscv64 conda Linux
+  license: GPL-3.0-or-later WITH GCC-exception-3.1
+
+extra:
+  recipe-maintainers:
+    - trdthg

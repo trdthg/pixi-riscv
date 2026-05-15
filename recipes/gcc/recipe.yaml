@@ -43,11 +43,11 @@ build:
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      "$PREFIX/bin/make" -j"$(nproc)" all-gcc all-target-libgcc all-target-libstdc++-v3
+      make -j"$(nproc)" all-gcc all-target-libgcc all-target-libstdc++-v3
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      "$PREFIX/bin/make" install-gcc install-target-libgcc install-target-libstdc++-v3
+      make install-gcc install-target-libgcc install-target-libstdc++-v3
     - ln -sf "${{ target }}-gcc" "$PREFIX/bin/gcc"
     - ln -sf "${{ target }}-g++" "$PREFIX/bin/g++"
 

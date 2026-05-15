@@ -87,15 +87,12 @@ tests:
       - $PREFIX/bin/cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - |
         for symbol in \
-          rmw_count_clients \
-          rmw_count_services \
-          rmw_get_gid_for_client \
-          rmw_take_dynamic_message \
-          rmw_take_dynamic_message_with_info \
-          rmw_serialization_support_init
+          rmw_count_publishers \
+          rmw_count_subscribers \
+          rmw_get_gid_for_publisher
         do
           nm -D $PREFIX/lib/librmw_fastrtps_dynamic_cpp.so | grep -q " $symbol$" || {
-            echo "missing exported RMW symbol: $symbol"
+            echo "missing exported Humble RMW symbol: $symbol"
             exit 1
           }
         done

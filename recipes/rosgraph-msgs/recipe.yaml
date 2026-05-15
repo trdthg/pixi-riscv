@@ -14,7 +14,7 @@ source:
   rev: ${{ git_rev }}
 
 build:
-  number: 2
+  number: 3
   script:
     - cd ${{ source_dir }}
     - |
@@ -31,8 +31,10 @@ build:
       cmake_dir = Path(os.environ["PREFIX"]) / "share/rosgraph_msgs/cmake"
       for path in cmake_dir.glob("*.cmake"):
           text = path.read_text()
-          text = re.sub(r'INTERFACE_INCLUDE_DIRECTORIES\s+"[^"]*(?:host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include|libpython3)[^"]*"', 'INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/rosgraph_msgs"', text)
-          text = re.sub(r';?/usr/lib/riscv64-linux-gnu/libpython[^;"]*', '', text)
+          text = text.replace('/usr/lib/riscv64-linux-gnu/python3-numpy/numpy/_core/include', '${_IMPORT_PREFIX}/lib/python3.12/site-packages/numpy/_core/include')
+          text = re.sub(r'[^;"]*host_env_placehold[^;"]*numpy[^;"]*', '${_IMPORT_PREFIX}/lib/python3.12/site-packages/numpy/_core/include', text)
+          text = re.sub(r'/usr/lib/riscv64-linux-gnu/libpython[0-9.]*\.so', '${_IMPORT_PREFIX}/lib/libpython3.12.so', text)
+          text = re.sub(r'[^;"]*host_env_placehold[^;"]*libpython[0-9.]*\.so', '${_IMPORT_PREFIX}/lib/libpython3.12.so', text)
           path.write_text(text)
       PY
 
@@ -54,7 +56,7 @@ requirements:
     - python
     - rosidl-default-runtime
 
-# This recipe intentionally uses host cmake and compiler on the native riscv runner.
+# This recipe intentionally uses the host compiler on the native riscv runner.
 # future requirements:
 #   build:
 #     - c-compiler
@@ -76,8 +78,8 @@ tests:
       - test -f $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - grep -q 'msg/Clock.idl' $PREFIX/share/ament_index/resource_index/rosidl_interfaces/${{ ros_name }}
       - |
-        if grep -R -E 'host_env_placehold|/usr/lib|python3-numpy|numpy/_core/include|libpython3' "$PREFIX/share/${{ ros_name }}/cmake"; then
-          echo "${{ ros_name }} CMake exports contain non-relocatable include paths"
+        if grep -R -E 'host_env_placehold|python3-numpy|/usr/lib/riscv64-linux-gnu/(python|libpython)|libpython3\.13' "$PREFIX/share/${{ ros_name }}/cmake"; then
+          echo "${{ ros_name }} CMake exports contain system Python/numpy paths"
           exit 1
         fi
       - |

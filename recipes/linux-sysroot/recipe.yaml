@@ -11,7 +11,7 @@ package:
   version: ${{ version }}
 
 build:
-  number: 0
+  number: 1
   dynamic_linking:
     binary_relocation: false
   script:
@@ -60,6 +60,17 @@ build:
         done
       done
 
+      # Debian multiarch glibc headers live under usr/include/riscv64-linux-gnu,
+      # but GCC configured for riscv64-conda-linux-gnu does not search that
+      # directory by default when building target runtimes.
+      multiarch_include="$sysroot/usr/include/riscv64-linux-gnu"
+      if [ -d "$multiarch_include" ]; then
+        find "$multiarch_include" -maxdepth 1 -mindepth 1 | while read -r item; do
+          base="$(basename "$item")"
+          [ -e "$sysroot/usr/include/$base" ] || ln -s "riscv64-linux-gnu/$base" "$sysroot/usr/include/$base"
+        done
+      fi
+
       python3 - <<'PY'
       import os
       from pathlib import Path
@@ -90,6 +101,8 @@ tests:
   - script:
       - test -d "$PREFIX/${{ sysroot_dir }}/usr/include"
       - test -f "$PREFIX/${{ sysroot_dir }}/usr/include/features.h"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/include/bits/libc-header-start.h"
+      - test -f "$PREFIX/${{ sysroot_dir }}/usr/include/gnu/stubs-lp64d.h"
       - test -f "$PREFIX/${{ sysroot_dir }}/usr/include/linux/version.h"
       - test -f "$PREFIX/${{ sysroot_dir }}/usr/lib/riscv64-linux-gnu/crt1.o"
       - test -f "$PREFIX/${{ sysroot_dir }}/usr/lib/riscv64-linux-gnu/libc.so"

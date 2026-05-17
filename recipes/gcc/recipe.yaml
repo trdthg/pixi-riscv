@@ -13,7 +13,7 @@ source:
   sha256: e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
 
 build:
-  number: 0
+  number: 1
   dynamic_linking:
     binary_relocation: false
   script:
@@ -48,6 +48,25 @@ build:
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       make install-gcc install-target-libgcc install-target-libstdc++-v3
+    - |
+      "$PREFIX/bin/${{ target }}-gcc" -dumpspecs > "$PREFIX/lib/gcc/${{ target }}/${{ version }}/specs"
+    - |
+      for tool in gcc g++ cpp; do
+        bin="$PREFIX/bin/${{ target }}-${tool}"
+        [ -x "$bin" ] || continue
+        [ ! -L "$bin" ] || continue
+        mv "$bin" "$bin.real"
+        cat > "$bin" <<EOF
+      #!/usr/bin/env bash
+      set -euo pipefail
+      prefix=\$(CDPATH= cd -- "\$(dirname -- "\$0")/.." && pwd)
+      exec "\$prefix/bin/${{ target }}-${tool}.real" \\
+        -B"\$prefix/libexec/gcc/${{ target }}/${{ version }}/" \\
+        -B"\$prefix/lib/gcc/${{ target }}/${{ version }}/" \\
+        "\$@"
+      EOF
+        chmod +x "$bin"
+      done
     - ln -sf "${{ target }}-gcc" "$PREFIX/bin/gcc"
     - ln -sf "${{ target }}-g++" "$PREFIX/bin/g++"
 
@@ -110,13 +129,13 @@ tests:
       - $PREFIX/bin/${{ target }}-readelf -d hello-cxx | grep -q 'libstdc++'
       - |
         sysroot="$PREFIX/${{ sysroot_dir }}"
-        target_lib="$PREFIX/${{ target }}/lib64"
+        target_lib="$PREFIX/${{ target }}/lib"
         "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
           --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
           ./hello-c
       - |
         sysroot="$PREFIX/${{ sysroot_dir }}"
-        target_lib="$PREFIX/${{ target }}/lib64"
+        target_lib="$PREFIX/${{ target }}/lib"
         "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
           --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
           ./hello-cxx

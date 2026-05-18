@@ -43,7 +43,9 @@ build:
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      make -j"$(nproc)" all-gcc all-target-libgcc all-target-libstdc++-v3
+      jobs="$(nproc)"
+      [ "$jobs" -le 4 ] || jobs=4
+      make -j"$jobs" all-gcc all-target-libgcc all-target-libstdc++-v3
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

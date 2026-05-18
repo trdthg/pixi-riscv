@@ -13,9 +13,11 @@ source:
   sha256: e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
 
 build:
-  number: 1
+  number: 2
   dynamic_linking:
     binary_relocation: false
+  prefix_detection:
+    ignore_binary_files: true
   script:
     - mkdir build
     - cd build
@@ -53,7 +55,7 @@ build:
     - |
       "$PREFIX/bin/${{ target }}-gcc" -dumpspecs > "$PREFIX/lib/gcc/${{ target }}/${{ version }}/specs"
     - |
-      for tool in gcc g++ cpp; do
+      for tool in gcc gcc-${{ version }} g++ c++ cpp; do
         bin="$PREFIX/bin/${{ target }}-${tool}"
         [ -x "$bin" ] || continue
         [ ! -L "$bin" ] || continue
@@ -62,9 +64,13 @@ build:
       #!/usr/bin/env bash
       set -euo pipefail
       prefix=\$(CDPATH= cd -- "\$(dirname -- "\$0")/.." && pwd)
+      export GCC_EXEC_PREFIX="\$prefix/lib/gcc/"
       exec "\$prefix/bin/${{ target }}-${tool}.real" \\
+        --sysroot="\$prefix/${{ sysroot_dir }}" \\
+        -specs="\$prefix/lib/gcc/${{ target }}/${{ version }}/specs" \\
         -B"\$prefix/libexec/gcc/${{ target }}/${{ version }}/" \\
         -B"\$prefix/lib/gcc/${{ target }}/${{ version }}/" \\
+        -B"\$prefix/${{ target }}/bin/" \\
         "\$@"
       EOF
         chmod +x "$bin"
@@ -106,6 +112,8 @@ tests:
       - test -x "$PREFIX/bin/${{ target }}-g++"
       - $PREFIX/bin/${{ target }}-gcc --version
       - $PREFIX/bin/${{ target }}-g++ --version
+      - $PREFIX/bin/${{ target }}-gcc -dumpspecs >/dev/null
+      - $PREFIX/bin/${{ target }}-gcc -print-search-dirs | grep -q "$PREFIX/lib/gcc/${{ target }}/${{ version }}"
       - $PREFIX/bin/${{ target }}-gcc -print-sysroot | grep -q "$PREFIX/${{ sysroot_dir }}"
       - |
         cat > hello.c <<'EOF'

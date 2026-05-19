@@ -1,0 +1,66 @@
+context:
+  name: "gxx_linux-riscv64"
+  version: "13.2.0"
+  target: "riscv64-conda-linux-gnu"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/etc/conda/activate.d" "$PREFIX/etc/conda/deactivate.d"
+    - |
+      cat > "$PREFIX/etc/conda/activate.d/${{ name }}.sh" <<'EOF'
+      _pixi_riscv_prefix="${CONDA_PREFIX:-${PREFIX:-}}"
+
+      if [ -n "${CXX+x}" ]; then export _PIXI_RISCV_BACKUP_CXX="$CXX"; else unset _PIXI_RISCV_BACKUP_CXX; fi
+
+      export CXX="$_pixi_riscv_prefix/bin/${{ target }}-g++"
+      EOF
+    - |
+      cat > "$PREFIX/etc/conda/deactivate.d/${{ name }}.sh" <<'EOF'
+      if [ -n "${_PIXI_RISCV_BACKUP_CXX+x}" ]; then
+        export CXX="$_PIXI_RISCV_BACKUP_CXX"
+        unset _PIXI_RISCV_BACKUP_CXX
+      else
+        unset CXX
+      fi
+      EOF
+
+requirements:
+  run:
+    - gcc_linux-riscv64 ==${{ version }}
+
+tests:
+  - script:
+      - test "$CC" = "$PREFIX/bin/${{ target }}-gcc"
+      - test "$CXX" = "$PREFIX/bin/${{ target }}-g++"
+      - $CXX --version
+      - |
+        cat > hello.cpp <<'EOF'
+        #include <iostream>
+        #include <vector>
+        int main() {
+          std::vector<int> values{1, 2, 3};
+          std::cout << values.size() << "\n";
+          return values.size() == 3 ? 0 : 1;
+        }
+        EOF
+      - $CXX hello.cpp -o hello-cxx
+      - |
+        sysroot="$PREFIX/riscv64-conda-linux-gnu/sysroot"
+        target_lib="$PREFIX/riscv64-conda-linux-gnu/lib"
+        "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
+          --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
+          ./hello-cxx
+
+about:
+  homepage: https://gcc.gnu.org/
+  summary: Activation package for the riscv64 GNU C++ compiler
+  license: GPL-3.0-or-later WITH GCC-exception-3.1
+
+extra:
+  recipe-maintainers:
+    - trdthg

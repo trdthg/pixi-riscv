@@ -10,15 +10,21 @@ source:
   path: ./hello.c
 
 build:
-  number: 0
+  number: 1
   script:
     - mkdir -p $PREFIX/bin
-    - gcc -o $PREFIX/bin/hello hello.c
+    - test -n "${CC:-}"
+    - case "$CC" in */bin/riscv64-conda-linux-gnu-gcc) ;; *) echo "unexpected CC=$CC"; exit 1 ;; esac
+    - $CC -o $PREFIX/bin/hello hello.c
 
-# requirements:
-#   build:
-#     - ${{ compiler("c") }}
+requirements:
+  build:
+    - ${{ compiler("c") }}
 
 tests:
   - script:
       - hello
+      - $PREFIX/bin/riscv64-conda-linux-gnu-readelf -l "$(command -v hello)" | grep -q 'ld-linux-riscv64-lp64d.so.1'
+    requirements:
+      run:
+        - binutils

@@ -1,0 +1,92 @@
+context:
+  name: "gcc_linux-riscv64"
+  version: "13.2.0"
+  target: "riscv64-conda-linux-gnu"
+  sysroot_dir: "riscv64-conda-linux-gnu/sysroot"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/etc/conda/activate.d" "$PREFIX/etc/conda/deactivate.d"
+    - |
+      cat > "$PREFIX/etc/conda/activate.d/${{ name }}.sh" <<'EOF'
+      _pixi_riscv_prefix="${CONDA_PREFIX:-${PREFIX:-}}"
+
+      if [ -n "${CC+x}" ]; then export _PIXI_RISCV_BACKUP_CC="$CC"; else unset _PIXI_RISCV_BACKUP_CC; fi
+      if [ -n "${CPP+x}" ]; then export _PIXI_RISCV_BACKUP_CPP="$CPP"; else unset _PIXI_RISCV_BACKUP_CPP; fi
+      if [ -n "${AS+x}" ]; then export _PIXI_RISCV_BACKUP_AS="$AS"; else unset _PIXI_RISCV_BACKUP_AS; fi
+      if [ -n "${LD+x}" ]; then export _PIXI_RISCV_BACKUP_LD="$LD"; else unset _PIXI_RISCV_BACKUP_LD; fi
+      if [ -n "${AR+x}" ]; then export _PIXI_RISCV_BACKUP_AR="$AR"; else unset _PIXI_RISCV_BACKUP_AR; fi
+      if [ -n "${NM+x}" ]; then export _PIXI_RISCV_BACKUP_NM="$NM"; else unset _PIXI_RISCV_BACKUP_NM; fi
+      if [ -n "${RANLIB+x}" ]; then export _PIXI_RISCV_BACKUP_RANLIB="$RANLIB"; else unset _PIXI_RISCV_BACKUP_RANLIB; fi
+      if [ -n "${READELF+x}" ]; then export _PIXI_RISCV_BACKUP_READELF="$READELF"; else unset _PIXI_RISCV_BACKUP_READELF; fi
+      if [ -n "${STRIP+x}" ]; then export _PIXI_RISCV_BACKUP_STRIP="$STRIP"; else unset _PIXI_RISCV_BACKUP_STRIP; fi
+      if [ -n "${OBJCOPY+x}" ]; then export _PIXI_RISCV_BACKUP_OBJCOPY="$OBJCOPY"; else unset _PIXI_RISCV_BACKUP_OBJCOPY; fi
+      if [ -n "${OBJDUMP+x}" ]; then export _PIXI_RISCV_BACKUP_OBJDUMP="$OBJDUMP"; else unset _PIXI_RISCV_BACKUP_OBJDUMP; fi
+      if [ -n "${CONDA_BUILD_SYSROOT+x}" ]; then export _PIXI_RISCV_BACKUP_CONDA_BUILD_SYSROOT="$CONDA_BUILD_SYSROOT"; else unset _PIXI_RISCV_BACKUP_CONDA_BUILD_SYSROOT; fi
+
+      export CC="$_pixi_riscv_prefix/bin/${{ target }}-gcc"
+      export CPP="$_pixi_riscv_prefix/bin/${{ target }}-cpp"
+      export AS="$_pixi_riscv_prefix/bin/${{ target }}-as"
+      export LD="$_pixi_riscv_prefix/bin/${{ target }}-ld"
+      export AR="$_pixi_riscv_prefix/bin/${{ target }}-ar"
+      export NM="$_pixi_riscv_prefix/bin/${{ target }}-nm"
+      export RANLIB="$_pixi_riscv_prefix/bin/${{ target }}-ranlib"
+      export READELF="$_pixi_riscv_prefix/bin/${{ target }}-readelf"
+      export STRIP="$_pixi_riscv_prefix/bin/${{ target }}-strip"
+      export OBJCOPY="$_pixi_riscv_prefix/bin/${{ target }}-objcopy"
+      export OBJDUMP="$_pixi_riscv_prefix/bin/${{ target }}-objdump"
+      export CONDA_BUILD_SYSROOT="$_pixi_riscv_prefix/${{ sysroot_dir }}"
+      EOF
+    - |
+      cat > "$PREFIX/etc/conda/deactivate.d/${{ name }}.sh" <<'EOF'
+      if [ -n "${_PIXI_RISCV_BACKUP_CC+x}" ]; then export CC="$_PIXI_RISCV_BACKUP_CC"; unset _PIXI_RISCV_BACKUP_CC; else unset CC; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_CPP+x}" ]; then export CPP="$_PIXI_RISCV_BACKUP_CPP"; unset _PIXI_RISCV_BACKUP_CPP; else unset CPP; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_AS+x}" ]; then export AS="$_PIXI_RISCV_BACKUP_AS"; unset _PIXI_RISCV_BACKUP_AS; else unset AS; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_LD+x}" ]; then export LD="$_PIXI_RISCV_BACKUP_LD"; unset _PIXI_RISCV_BACKUP_LD; else unset LD; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_AR+x}" ]; then export AR="$_PIXI_RISCV_BACKUP_AR"; unset _PIXI_RISCV_BACKUP_AR; else unset AR; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_NM+x}" ]; then export NM="$_PIXI_RISCV_BACKUP_NM"; unset _PIXI_RISCV_BACKUP_NM; else unset NM; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_RANLIB+x}" ]; then export RANLIB="$_PIXI_RISCV_BACKUP_RANLIB"; unset _PIXI_RISCV_BACKUP_RANLIB; else unset RANLIB; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_READELF+x}" ]; then export READELF="$_PIXI_RISCV_BACKUP_READELF"; unset _PIXI_RISCV_BACKUP_READELF; else unset READELF; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_STRIP+x}" ]; then export STRIP="$_PIXI_RISCV_BACKUP_STRIP"; unset _PIXI_RISCV_BACKUP_STRIP; else unset STRIP; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_OBJCOPY+x}" ]; then export OBJCOPY="$_PIXI_RISCV_BACKUP_OBJCOPY"; unset _PIXI_RISCV_BACKUP_OBJCOPY; else unset OBJCOPY; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_OBJDUMP+x}" ]; then export OBJDUMP="$_PIXI_RISCV_BACKUP_OBJDUMP"; unset _PIXI_RISCV_BACKUP_OBJDUMP; else unset OBJDUMP; fi
+      if [ -n "${_PIXI_RISCV_BACKUP_CONDA_BUILD_SYSROOT+x}" ]; then export CONDA_BUILD_SYSROOT="$_PIXI_RISCV_BACKUP_CONDA_BUILD_SYSROOT"; unset _PIXI_RISCV_BACKUP_CONDA_BUILD_SYSROOT; else unset CONDA_BUILD_SYSROOT; fi
+      EOF
+
+requirements:
+  run:
+    - gcc ==${{ version }}
+
+tests:
+  - script:
+      - test "$CC" = "$PREFIX/bin/${{ target }}-gcc"
+      - test "$CPP" = "$PREFIX/bin/${{ target }}-cpp"
+      - test "$LD" = "$PREFIX/bin/${{ target }}-ld"
+      - test "$AR" = "$PREFIX/bin/${{ target }}-ar"
+      - test "$READELF" = "$PREFIX/bin/${{ target }}-readelf"
+      - test "$CONDA_BUILD_SYSROOT" = "$PREFIX/${{ sysroot_dir }}"
+      - $CC --version
+      - |
+        cat > hello.c <<'EOF'
+        #include <stdio.h>
+        int main(void) {
+          puts("hello-c");
+          return 0;
+        }
+        EOF
+      - $CC hello.c -o hello-c
+      - ./hello-c
+
+about:
+  homepage: https://gcc.gnu.org/
+  summary: Activation package for the riscv64 GNU C compiler
+  license: GPL-3.0-or-later WITH GCC-exception-3.1
+
+extra:
+  recipe-maintainers:
+    - trdthg

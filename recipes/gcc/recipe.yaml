@@ -13,7 +13,7 @@ source:
   sha256: e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
 
 build:
-  number: 2
+  number: 3
   dynamic_linking:
     binary_relocation: false
   prefix_detection:
@@ -47,11 +47,11 @@ build:
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       jobs="$(nproc)"
       [ "$jobs" -le 4 ] || jobs=4
-      make -j"$jobs" all-gcc all-target-libgcc all-target-libstdc++-v3
+      make -j"$jobs" all-gcc all-target-libgcc all-target-libstdc++-v3 all-target-libatomic
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      make install-gcc install-target-libgcc install-target-libstdc++-v3
+      make install-gcc install-target-libgcc install-target-libstdc++-v3 install-target-libatomic
     - |
       "$PREFIX/bin/${{ target }}-gcc" -dumpspecs > "$PREFIX/lib/gcc/${{ target }}/${{ version }}/specs"
     - |
@@ -115,6 +115,7 @@ tests:
       - $PREFIX/bin/${{ target }}-gcc -dumpspecs >/dev/null
       - $PREFIX/bin/${{ target }}-gcc -print-search-dirs | grep -q "$PREFIX/lib/gcc/${{ target }}/${{ version }}"
       - $PREFIX/bin/${{ target }}-gcc -print-sysroot | grep -q "$PREFIX/${{ sysroot_dir }}"
+      - test -f "$PREFIX/${{ target }}/lib/libatomic.so"
       - |
         cat > hello.c <<'EOF'
         #include <stdio.h>
@@ -124,6 +125,7 @@ tests:
         }
         EOF
       - $PREFIX/bin/${{ target }}-gcc hello.c -o hello-c
+      - $PREFIX/bin/${{ target }}-gcc hello.c -latomic -o hello-atomic
       - $PREFIX/bin/${{ target }}-readelf -l hello-c | grep -q 'ld-linux-riscv64-lp64d.so.1'
       - |
         cat > hello.cpp <<'EOF'
@@ -143,6 +145,12 @@ tests:
         "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
           --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
           ./hello-c
+      - |
+        sysroot="$PREFIX/${{ sysroot_dir }}"
+        target_lib="$PREFIX/${{ target }}/lib"
+        "$sysroot/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1" \
+          --library-path "$target_lib:$sysroot/lib/riscv64-linux-gnu:$sysroot/usr/lib/riscv64-linux-gnu" \
+          ./hello-atomic
       - |
         sysroot="$PREFIX/${{ sysroot_dir }}"
         target_lib="$PREFIX/${{ target }}/lib"

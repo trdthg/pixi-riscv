@@ -132,6 +132,12 @@ build:
       Path(os.environ["PREFIX"], "include/rcutils/logging_macros.h").write_text("\n".join(lines) + "\n")
       PY
     - |
+      atomic_lib="$($CC -print-file-name=libatomic.so)"
+      if [ "$atomic_lib" = "libatomic.so" ] || [ ! -e "$atomic_lib" ]; then
+        atomic_flags=""
+      else
+        atomic_flags="-latomic"
+      fi
       $CC -std=c11 -fPIC -D_GNU_SOURCE -DRCUTILS_BUILDING_DLL -Iinclude -I"$PREFIX/include" -Isrc \
         -shared \
         src/allocator.c src/array_list.c src/char_array.c src/cmdline_parser.c src/env.c \
@@ -140,7 +146,7 @@ build:
         src/snprintf.c src/split.c src/strcasecmp.c src/strdup.c src/strerror.c \
         src/string_array.c src/string_map.c src/testing/fault_injection.c src/time.c \
         src/time_unix.c src/uint8_array.c \
-        -ldl -latomic -o "$PREFIX/lib/librcutils.so"
+        -ldl $atomic_flags -o "$PREFIX/lib/librcutils.so"
     - cp package.xml "$PREFIX/share/rcutils/package.xml"
     - |
       printf '%s\n' "$PREFIX" > "$PREFIX/share/ament_index/resource_index/packages/rcutils"

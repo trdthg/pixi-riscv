@@ -173,14 +173,44 @@ jobs:
         if: steps.recipes.outputs.has_recipes == 'true'
         shell: bash
         run: |
-          rm -rf output/bld output/test output/${{ matrix.target }} output/noarch
+          rm -rf output/bld output/test
           mkdir -p output
+
+          upload_packages() {
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              return 0
+            fi
+
+            shopt -s globstar nullglob
+            local file output_text status
+            for file in output/**/*.conda; do
+              echo "Uploading $file"
+              set +e
+              output_text="$(rattler-build upload prefix -c riscv "$file" 2>&1)"
+              status=$?
+              set -e
+              printf '%s\n' "$output_text"
+              if [ "$status" -ne 0 ]; then
+                if grep -qiE 'package already exists|HTTP 409' <<<"$output_text"; then
+                  echo "Package already exists, continuing: $file"
+                else
+                  return "$status"
+                fi
+              fi
+            done
+          }
+
+          # If a previous run built packages but failed before the final upload
+          # step, preserve and upload them before doing more work.
+          upload_packages
+
           while IFS= read -r recipe_dir; do
             rattler-build build --recipe-dir "$recipe_dir" \
               --target-platform=${{ matrix.target }} \
               --channel="file://${PWD}/output" \
               --channel="https://prefix.dev/riscv" \
               --channel=conda-forge
+            upload_packages
           done < /tmp/recipes-to-build
 
       - name: Upload all packages
@@ -188,7 +218,19 @@ jobs:
         # do not upload on PR
         if: github.event_name != 'pull_request' && steps.recipes.outputs.has_recipes == 'true'
         run: |
-          # uses trusted publishers for the upload
+          shopt -s globstar nullglob
           for file in output/**/*.conda; do
-            rattler-build upload prefix -c riscv "$file"
+            echo "Uploading $file"
+            set +e
+            output_text="$(rattler-build upload prefix -c riscv "$file" 2>&1)"
+            status=$?
+            set -e
+            printf '%s\n' "$output_text"
+            if [ "$status" -ne 0 ]; then
+              if grep -qiE 'package already exists|HTTP 409' <<<"$output_text"; then
+                echo "Package already exists, continuing: $file"
+              else
+                exit "$status"
+              fi
+            fi
           done

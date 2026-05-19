@@ -19,10 +19,12 @@ build:
     - make -j"$(nproc)"
     - make install
 
-# Bootstrap package: uses the host compiler on the native riscv runner.
-# future requirements:
-#   build:
-#     - c-compiler
+requirements:
+  build:
+    - ${{ compiler("c") }}
+
+# Bootstrap package: still uses the host make executable to build GNU Make
+# itself, but no longer uses the host compiler.
 
 tests:
   - script:

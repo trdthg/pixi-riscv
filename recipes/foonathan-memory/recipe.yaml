@@ -19,15 +19,11 @@ build:
     - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFOONATHAN_MEMORY_BUILD_EXAMPLES=OFF -DFOONATHAN_MEMORY_BUILD_TESTS=OFF -DFOONATHAN_MEMORY_BUILD_TOOLS=OFF
     - cmake --build . --target install -- -j"$(nproc)"
 
-# This recipe intentionally uses the host cmake and compiler on the native
-# riscv runner. Enable these dependencies once the riscv channel has compilers.
-# requirements:
-#   build:
-#     - cxx-compiler
-#     - cmake
-#     - make
-#   run:
-#     - libstdcxx
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
 
 tests:
   - script:
@@ -51,8 +47,11 @@ tests:
           return 0;
         }
         EOF
-      - c++ -std=c++11 -I$PREFIX/include test_foonathan_memory.cpp -L$PREFIX/lib -lfoonathan_memory-0.7.4 -Wl,-rpath,$PREFIX/lib -o test_foonathan_memory
+      - $CXX -std=c++11 -I$PREFIX/include test_foonathan_memory.cpp -L$PREFIX/lib -lfoonathan_memory-0.7.4 -Wl,-rpath,$PREFIX/lib -o test_foonathan_memory
       - ./test_foonathan_memory
+    requirements:
+      run:
+        - gxx_linux-riscv64
 
 about:
   homepage: https://github.com/eProsima/memory

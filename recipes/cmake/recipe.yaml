@@ -19,15 +19,10 @@ build:
     - make -j"$(nproc)"
     - make install
 
-# This recipe intentionally uses the host compiler on the native riscv runner.
-# Keep it independent from conda cmake so it can bootstrap the rest of the
-# channel. Enable compiler dependencies once the riscv channel has toolchains.
-# future requirements:
-#   build:
-#     - cxx-compiler
-#     - make
-#   run:
-#     - libstdcxx
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - make
 
 tests:
   - script:

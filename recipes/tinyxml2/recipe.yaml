@@ -19,15 +19,11 @@ build:
     - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -Dtinyxml2_BUILD_TESTING=OFF
     - cmake --build . --target install -- -j"$(nproc)"
 
-# This recipe intentionally uses the host cmake and compiler on the native
-# riscv runner. Enable these dependencies once the riscv channel has compilers.
-# requirements:
-#   build:
-#     - cxx-compiler
-#     - cmake
-#     - make
-#   run:
-#     - libstdcxx
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
 
 tests:
   - script:
@@ -46,8 +42,11 @@ tests:
           return doc.Parse("<root/>") == tinyxml2::XML_SUCCESS ? 0 : 1;
         }
         EOF
-      - c++ -std=c++11 -I$PREFIX/include test_tinyxml2.cpp -L$PREFIX/lib -ltinyxml2 -Wl,-rpath,$PREFIX/lib -o test_tinyxml2
+      - $CXX -std=c++11 -I$PREFIX/include test_tinyxml2.cpp -L$PREFIX/lib -ltinyxml2 -Wl,-rpath,$PREFIX/lib -o test_tinyxml2
       - ./test_tinyxml2
+    requirements:
+      run:
+        - gxx_linux-riscv64
 
 about:
   homepage: https://github.com/leethomason/tinyxml2

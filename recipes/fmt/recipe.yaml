@@ -24,16 +24,9 @@ build:
 requirements:
   build:
     - patchelf
-  host:
     - cmake
-
-# This recipe intentionally uses the host compiler on the native riscv runner.
-# Enable these dependencies once the riscv channel has compilers and libstdc++.
-# requirements:
-#   build:
-#     - cxx-compiler
-#   run:
-#     - libstdcxx
+    - ${{ compiler("cxx") }}
+    - make
 
 tests:
   - script:
@@ -62,6 +55,11 @@ tests:
       - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - cmake --build build
       - ./build/test_fmt
+    requirements:
+      run:
+        - cmake
+        - gxx_linux-riscv64
+        - make
 
 about:
   homepage: https://github.com/fmtlib/fmt

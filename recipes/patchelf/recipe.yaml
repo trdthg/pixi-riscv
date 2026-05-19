@@ -19,12 +19,11 @@ build:
     - make -j"$(nproc)"
     - make install
 
-# This recipe intentionally uses the host compiler on the native riscv runner.
 # It must not depend on patchelf for its own packaging bootstrap.
-# future requirements:
-#   build:
-#     - cxx-compiler
-#     - make
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - make
 
 tests:
   - script:

@@ -24,12 +24,9 @@ requirements:
     - gmp
   run:
     - gmp
-
-# Bootstrap package: uses host compiler and make.
-# future requirements:
-#   build:
-#     - c-compiler
-#     - make
+  build:
+    - ${{ compiler("c") }}
+    - make
 
 tests:
   - script:

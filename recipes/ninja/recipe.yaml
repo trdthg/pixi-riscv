@@ -19,13 +19,10 @@ build:
     - mkdir -p "$PREFIX/bin"
     - cp ninja "$PREFIX/bin/ninja"
 
-# Bootstrap package: uses the host compiler and host Python on the native riscv
-# runner. Enable the Python dependency once the channel's Python package is used
-# for build tools.
-# future requirements:
-#   build:
-#     - cxx-compiler
-#     - python
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - python
 
 tests:
   - script:

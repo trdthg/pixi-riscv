@@ -30,17 +30,13 @@ build:
     - make install MAKEINFO=true
 
 requirements:
+  build:
+    - ${{ compiler("c") }}
+    - make
   host:
     - linux-sysroot
   run:
     - linux-sysroot
-
-# Bootstrap package: uses the host compiler and host make on the native riscv
-# runner. It provides target-prefixed tools for the packaged GCC bootstrap.
-# future requirements:
-#   build:
-#     - c-compiler
-#     - make
 
 tests:
   - script:

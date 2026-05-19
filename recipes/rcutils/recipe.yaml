@@ -132,7 +132,7 @@ build:
       Path(os.environ["PREFIX"], "include/rcutils/logging_macros.h").write_text("\n".join(lines) + "\n")
       PY
     - |
-      cc -std=c11 -fPIC -D_GNU_SOURCE -DRCUTILS_BUILDING_DLL -Iinclude -I"$PREFIX/include" -Isrc \
+      $CC -std=c11 -fPIC -D_GNU_SOURCE -DRCUTILS_BUILDING_DLL -Iinclude -I"$PREFIX/include" -Isrc \
         -shared \
         src/allocator.c src/array_list.c src/char_array.c src/cmdline_parser.c src/env.c \
         src/error_handling.c src/filesystem.c src/find.c src/format_string.c src/hash_map.c \
@@ -163,16 +163,12 @@ build:
       EOF
 
 requirements:
+  build:
+    - ${{ compiler("c") }}
   host:
     - python
   run:
     - python
-
-# requirements:
-#   build:
-#     - c-compiler
-#   run:
-#     - libgcc
 
 tests:
   - script:
@@ -207,8 +203,11 @@ tests:
           return 0;
         }
         EOF
-      - cc -std=c11 -I$PREFIX/include test_rcutils.c -L$PREFIX/lib -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rcutils
+      - $CC -std=c11 -I$PREFIX/include test_rcutils.c -L$PREFIX/lib -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rcutils
       - ./test_rcutils
+    requirements:
+      run:
+        - gcc_linux-riscv64
 
 about:
   homepage: https://github.com/ros2/rcutils

@@ -19,11 +19,10 @@ build:
     - make -j"$(nproc)"
     - make install
 
-# Bootstrap package: uses host compiler and make.
-# future requirements:
-#   build:
-#     - c-compiler
-#     - make
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - make
 
 tests:
   - script:

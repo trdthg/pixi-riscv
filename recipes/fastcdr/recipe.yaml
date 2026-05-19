@@ -19,16 +19,11 @@ build:
     - cmake .. -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DEPROSIMA_BUILD_TESTS=OFF -DBUILD_DOCUMENTATION=OFF
     - cmake --build . --target install -- -j"$(nproc)"
 
-# This recipe intentionally uses the host cmake and compiler on the native
-# riscv runner. Enable these dependencies once the riscv channel has compilers.
-# requirements:
-#   build:
-#     - c-compiler
-#     - cxx-compiler
-#     - cmake
-#     - make
-#   run:
-#     - libstdcxx
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
 
 tests:
   - script:
@@ -53,8 +48,11 @@ tests:
           return in == out ? 0 : 1;
         }
         EOF
-      - c++ -std=c++11 -I$PREFIX/include test_fastcdr.cpp -L$PREFIX/lib -lfastcdr -Wl,-rpath,$PREFIX/lib -o test_fastcdr
+      - $CXX -std=c++11 -I$PREFIX/include test_fastcdr.cpp -L$PREFIX/lib -lfastcdr -Wl,-rpath,$PREFIX/lib -o test_fastcdr
       - ./test_fastcdr
+    requirements:
+      run:
+        - gxx_linux-riscv64
 
 about:
   homepage: https://github.com/eProsima/Fast-CDR

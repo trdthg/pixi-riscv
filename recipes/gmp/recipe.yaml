@@ -22,13 +22,8 @@ build:
 requirements:
   build:
     - m4
-
-# Bootstrap package: uses host compiler and make.
-# future requirements:
-#   build:
-#     - c-compiler
-#     - cxx-compiler
-#     - make
+    - ${{ compiler("c") }}
+    - make
 
 tests:
   - script:

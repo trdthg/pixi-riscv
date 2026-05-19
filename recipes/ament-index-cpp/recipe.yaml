@@ -18,7 +18,7 @@ build:
     - cd ${{ source_dir }}
     - mkdir -p "$PREFIX/include/ament_index_cpp" "$PREFIX/lib" "$PREFIX/share/ament_index_cpp/cmake" "$PREFIX/share/ament_index/resource_index/packages"
     - |
-      c++ -std=c++14 -fPIC -DAMENT_INDEX_CPP_BUILDING_DLL -Iinclude \
+      $CXX -std=c++14 -fPIC -DAMENT_INDEX_CPP_BUILDING_DLL -Iinclude \
         -shared src/*.cpp -o "$PREFIX/lib/libament_index_cpp.so"
     - cp -R include/ament_index_cpp "$PREFIX/include/"
     - cp package.xml "$PREFIX/share/ament_index_cpp/package.xml"
@@ -39,11 +39,9 @@ build:
       )
       EOF
 
-# requirements:
-#   build:
-#     - cxx-compiler
-#   run:
-#     - libstdcxx
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
 
 tests:
   - script:
@@ -72,8 +70,13 @@ tests:
       - cmake -S . -B build -DCMAKE_PREFIX_PATH=$PREFIX
       - cmake --build build
       - AMENT_PREFIX_PATH=$PREFIX ./build/test_ament_index_cpp_cmake
-      - c++ -std=c++14 -I$PREFIX/include test_ament_index_cpp.cpp -L$PREFIX/lib -lament_index_cpp -Wl,-rpath,$PREFIX/lib -o test_ament_index_cpp
+      - $CXX -std=c++14 -I$PREFIX/include test_ament_index_cpp.cpp -L$PREFIX/lib -lament_index_cpp -Wl,-rpath,$PREFIX/lib -o test_ament_index_cpp
       - AMENT_PREFIX_PATH=$PREFIX ./test_ament_index_cpp
+    requirements:
+      run:
+        - cmake
+        - gxx_linux-riscv64
+        - make
 
 about:
   homepage: https://github.com/ament/ament_index

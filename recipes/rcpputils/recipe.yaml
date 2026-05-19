@@ -18,7 +18,7 @@ build:
     - cp -R include/rcpputils "$PREFIX/include/"
     - cp -R include/rcppmath "$PREFIX/include/"
     - |
-      c++ -std=c++14 -fPIC -Iinclude -I"$PREFIX/include" \
+      $CXX -std=c++14 -fPIC -Iinclude -I"$PREFIX/include" \
         -shared \
         src/asserts.cpp src/filesystem_helper.cpp src/find_library.cpp \
         src/env.cpp src/shared_library.cpp \
@@ -48,16 +48,12 @@ build:
       EOF
 
 requirements:
+  build:
+    - ${{ compiler("cxx") }}
   host:
     - rcutils
   run:
     - rcutils
-
-# future requirements:
-#   build:
-#     - cxx-compiler
-#   run:
-#     - libstdcxx
 
 tests:
   - script:
@@ -74,8 +70,11 @@ tests:
           return (parts.size() == 2 && rcppmath::clamp(5, 1, 3) == 3) ? 0 : 1;
         }
         EOF
-      - c++ -std=c++14 -I$PREFIX/include test_rcpputils.cpp -L$PREFIX/lib -lrcpputils -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rcpputils
+      - $CXX -std=c++14 -I$PREFIX/include test_rcpputils.cpp -L$PREFIX/lib -lrcpputils -lrcutils -Wl,-rpath,$PREFIX/lib -o test_rcpputils
       - ./test_rcpputils
+    requirements:
+      run:
+        - gxx_linux-riscv64
 
 about:
   homepage: https://github.com/ros2/rcpputils

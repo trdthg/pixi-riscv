@@ -19,6 +19,12 @@ build:
   prefix_detection:
     ignore_binary_files: true
   script:
+    - |
+      # Ada is not enabled for this bootstrap compiler, but GCC still parses the
+      # language make fragment during all-gcc. Avoid a make parser failure in the
+      # unused Ada generated-source include.
+      sed -i '/^include $(srcdir)\/ada\/Make-generated.in$/s/^/# /' \
+        gcc/ada/gcc-interface/Make-lang.in
     - mkdir build
     - cd build
     - |

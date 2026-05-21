@@ -47,11 +47,17 @@ build:
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       jobs="$(nproc)"
       [ "$jobs" -le 4 ] || jobs=4
-      make -j"$jobs" all-gcc all-target-libgcc all-target-libstdc++-v3 all-target-libatomic
+      make -j"$jobs" all-gcc
+      make -j"$jobs" all-target-libgcc
+      make -j"$jobs" all-target-libstdc++-v3
+      make -j"$jobs" all-target-libatomic
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      make install-gcc install-target-libgcc install-target-libstdc++-v3 install-target-libatomic
+      make install-gcc
+      make install-target-libgcc
+      make install-target-libstdc++-v3
+      make install-target-libatomic
     - |
       "$PREFIX/bin/${{ target }}-gcc" -dumpspecs > "$PREFIX/lib/gcc/${{ target }}/${{ version }}/specs"
     - |

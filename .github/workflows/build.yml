@@ -176,14 +176,16 @@ jobs:
           rm -rf output/bld output/test
           mkdir -p output
 
-          upload_packages() {
+          upload_new_packages() {
             if [ "${{ github.event_name }}" = "pull_request" ]; then
               return 0
             fi
 
-            shopt -s globstar nullglob
+            local marker="$1"
             local file output_text status
-            for file in output/**/*.conda; do
+
+            while IFS= read -r file; do
+              [ -n "$file" ] || continue
               echo "Uploading $file"
               set +e
               output_text="$(rattler-build upload prefix -c riscv "$file" 2>&1)"
@@ -197,40 +199,18 @@ jobs:
                   return "$status"
                 fi
               fi
-            done
+            done < <(find output -type f -name '*.conda' -newer "$marker" | sort)
           }
 
-          # If a previous run built packages but failed before the final upload
-          # step, preserve and upload them before doing more work.
-          upload_packages
-
           while IFS= read -r recipe_dir; do
+            marker="$(mktemp)"
+            touch "$marker"
+
             rattler-build build --recipe-dir "$recipe_dir" \
               --target-platform=${{ matrix.target }} \
               --channel="file://${PWD}/output" \
               --channel="https://prefix.dev/riscv" \
               --channel=conda-forge
-            upload_packages
+            upload_new_packages "$marker"
+            rm -f "$marker"
           done < /tmp/recipes-to-build
-
-      - name: Upload all packages
-        shell: bash
-        # do not upload on PR
-        if: github.event_name != 'pull_request' && steps.recipes.outputs.has_recipes == 'true'
-        run: |
-          shopt -s globstar nullglob
-          for file in output/**/*.conda; do
-            echo "Uploading $file"
-            set +e
-            output_text="$(rattler-build upload prefix -c riscv "$file" 2>&1)"
-            status=$?
-            set -e
-            printf '%s\n' "$output_text"
-            if [ "$status" -ne 0 ]; then
-              if grep -qiE 'package already exists|HTTP 409' <<<"$output_text"; then
-                echo "Package already exists, continuing: $file"
-              else
-                exit "$status"
-              fi
-            fi
-          done

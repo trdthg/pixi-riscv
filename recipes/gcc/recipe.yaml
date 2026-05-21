@@ -24,6 +24,8 @@ build:
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      export am_cv_CC_dependencies_compiler_type=gcc3
+      export am_cv_CXX_dependencies_compiler_type=gcc3
       ../configure \
         --prefix="$PREFIX" \
         --target="${{ target }}" \
@@ -46,6 +48,8 @@ build:
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      export am_cv_CC_dependencies_compiler_type=gcc3
+      export am_cv_CXX_dependencies_compiler_type=gcc3
       jobs="$(nproc)"
       [ "$jobs" -le 4 ] || jobs=4
       make all-gcc

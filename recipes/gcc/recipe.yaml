@@ -38,6 +38,7 @@ build:
         --disable-bootstrap \
         --disable-multilib \
         --disable-nls \
+        --disable-dependency-tracking \
         --disable-libsanitizer \
         --disable-libquadmath \
         --without-isl \
@@ -47,7 +48,7 @@ build:
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       jobs="$(nproc)"
       [ "$jobs" -le 4 ] || jobs=4
-      make -j"$jobs" all-gcc
+      make all-gcc
       make -j"$jobs" all-target-libgcc
       make -j"$jobs" all-target-libstdc++-v3
       make -j"$jobs" all-target-libatomic

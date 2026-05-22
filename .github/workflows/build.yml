@@ -44,8 +44,18 @@ jobs:
           rm -rf output
           mkdir -p cache-channel
           trap 'rm -rf output' EXIT
-          command -v rattler-index >/dev/null
-          rattler-index fs cache-channel --force
+          for subdir in noarch ${{ matrix.target }}; do
+            mkdir -p "cache-channel/$subdir"
+            if [ ! -f "cache-channel/$subdir/repodata.json" ]; then
+              printf '{"info":{"subdir":"%s"},"packages":{},"packages.conda":{}}\n' "$subdir" \
+                > "cache-channel/$subdir/repodata.json"
+            fi
+          done
+          if command -v rattler-index >/dev/null; then
+            rattler-index fs cache-channel --force
+          else
+            echo "rattler-index not found; using existing cache-channel as-is"
+          fi
           rattler-build build --recipe-dir "recipes/$recipe" \
             --target-platform=${{ matrix.target }} \
             --output-dir=output \
@@ -61,4 +71,8 @@ jobs:
               cp -f "$pkg" "cache-channel/$subdir/"
             done
           ' sh {} +
-          rattler-index fs cache-channel --force
+          if command -v rattler-index >/dev/null; then
+            rattler-index fs cache-channel --force
+          else
+            echo "rattler-index not found; cache-channel was not reindexed"
+          fi

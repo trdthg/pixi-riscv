@@ -42,6 +42,10 @@ jobs:
           recipe="${recipe%/}"
           test -f "recipes/$recipe/recipe.yaml"
           rm -rf output
+          mkdir -p cache-channel
+          trap 'rm -rf output' EXIT
+          command -v rattler-index >/dev/null
+          rattler-index fs cache-channel --force
           rattler-build build --recipe-dir "recipes/$recipe" \
             --target-platform=${{ matrix.target }} \
             --output-dir=output \
@@ -49,3 +53,12 @@ jobs:
             --channel="https://prefix.dev/riscv" \
             --channel=conda-forge
           find output -type f -name '*.conda' -print -exec rattler-build upload prefix -c riscv {} \;
+          find output -type f -name '*.conda' -exec sh -c '
+            for pkg do
+              subdir="${pkg%/*}"
+              subdir="${subdir##*/}"
+              mkdir -p "cache-channel/$subdir"
+              cp -f "$pkg" "cache-channel/$subdir/"
+            done
+          ' sh {} +
+          rattler-index fs cache-channel --force

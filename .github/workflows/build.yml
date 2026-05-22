@@ -45,6 +45,7 @@ jobs:
           rattler-build build --recipe-dir "recipes/$recipe" \
             --target-platform=${{ matrix.target }} \
             --output-dir=output \
+            --channel="file://${PWD}/cache-channel" \
             --channel="https://prefix.dev/riscv" \
             --channel=conda-forge
           find output -type f -name '*.conda' -print -exec rattler-build upload prefix -c riscv {} \;

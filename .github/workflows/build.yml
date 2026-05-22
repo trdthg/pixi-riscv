@@ -62,7 +62,8 @@ jobs:
             --channel="file://${PWD}/cache-channel" \
             --channel="https://prefix.dev/riscv" \
             --channel=conda-forge
-          find output -type f -name '*.conda' -print -exec rattler-build upload prefix -c riscv {} \;
+          find output -type f -name '*.conda' -print \
+            -exec rattler-build upload prefix -c riscv --skip-existing {} \;
           find output -type f -name '*.conda' -exec sh -c '
             for pkg do
               subdir="${pkg%/*}"

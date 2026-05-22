@@ -5,18 +5,12 @@ permissions:
   id-token: write
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       recipe:
         description: "Single recipe name or path to build, for example 'mimick' or 'recipes/mimick'."
         required: true
         type: string
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build:
@@ -46,53 +40,26 @@ jobs:
         run: |
           set -euo pipefail
 
-          recipe_input="${{ github.event.inputs.recipe || '' }}"
-          if [ -n "$recipe_input" ]; then
-            recipe_input="${recipe_input#recipes/}"
-            recipe_input="${recipe_input%/}"
-            if [ "$recipe_input" = "all" ]; then
-              echo "Building all recipes in one run is intentionally disabled."
-              echo "Trigger one recipe at a time so dependencies are uploaded by previous runs."
-              exit 1
-            elif [ -f "recipes/${recipe_input}/recipe.yaml" ]; then
-              printf 'recipes/%s\n' "$recipe_input" > /tmp/recipes-to-build
-            else
-              echo "Unknown recipe: $recipe_input"
-              exit 1
-            fi
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "workflow_dispatch requires a single recipe input."
-            exit 1
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | awk -F/ '/^recipes\/[^/]+\// { print $1 "/" $2 }' | sort -u > /tmp/recipes-to-build
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            git diff --name-only ${{ github.event.before }} ${{ github.sha }} | awk -F/ '/^recipes\/[^/]+\// { print $1 "/" $2 }' | sort -u > /tmp/recipes-to-build
-          else
-            echo "Unsupported event: ${{ github.event_name }}"
+          recipe_input="${{ github.event.inputs.recipe }}"
+          recipe_input="${recipe_input#recipes/}"
+          recipe_input="${recipe_input%/}"
+
+          if [ "$recipe_input" = "all" ]; then
+            echo "Building all recipes in one run is intentionally disabled."
+            echo "Trigger one recipe at a time so dependencies are uploaded by previous runs."
             exit 1
           fi
 
-          if [ ! -s /tmp/recipes-to-build ]; then
-            echo "No changed recipes to build."
-            echo "has_recipes=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          recipe_count="$(wc -l < /tmp/recipes-to-build | tr -d ' ')"
-          if [ "$recipe_count" -ne 1 ]; then
-            echo "This workflow builds exactly one recipe per run."
-            echo "Changed recipes:"
-            cat /tmp/recipes-to-build
-            echo "Build dependencies first in separate runs, then trigger the dependent recipe."
+          if [ ! -f "recipes/${recipe_input}/recipe.yaml" ]; then
+            echo "Unknown recipe: $recipe_input"
             exit 1
           fi
 
+          printf 'recipes/%s\n' "$recipe_input" > /tmp/recipes-to-build
           echo "Selected recipe:"
           cat /tmp/recipes-to-build
-          echo "has_recipes=true" >> "$GITHUB_OUTPUT"
 
       - name: Build selected recipes
-        if: steps.recipes.outputs.has_recipes == 'true'
         shell: bash
         run: |
           if [ ! -d cache-channel ] && [ -d output ]; then
@@ -125,10 +92,6 @@ jobs:
           init_empty_channel cache-channel
 
           upload_built_packages() {
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              return 0
-            fi
-
             local file output_text status
 
             while IFS= read -r file; do

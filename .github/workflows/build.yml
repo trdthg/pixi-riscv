@@ -34,91 +34,17 @@ jobs:
       #   with:
       #     pixi-version: v0.68.0
 
-      - name: Select recipes
-        id: recipes
+      - name: Build recipe
         shell: bash
         run: |
-          set -euo pipefail
-
-          recipe_input="${{ github.event.inputs.recipe }}"
-          recipe_input="${recipe_input#recipes/}"
-          recipe_input="${recipe_input%/}"
-
-          if [ "$recipe_input" = "all" ]; then
-            echo "Building all recipes in one run is intentionally disabled."
-            echo "Trigger one recipe at a time so dependencies are uploaded by previous runs."
-            exit 1
-          fi
-
-          if [ ! -f "recipes/${recipe_input}/recipe.yaml" ]; then
-            echo "Unknown recipe: $recipe_input"
-            exit 1
-          fi
-
-          printf 'recipes/%s\n' "$recipe_input" > /tmp/recipes-to-build
-          echo "Selected recipe:"
-          cat /tmp/recipes-to-build
-
-      - name: Build selected recipes
-        shell: bash
-        run: |
-          if [ ! -d cache-channel ] && [ -d output ]; then
-            mkdir -p cache-channel
-            for subdir in noarch ${{ matrix.target }}; do
-              if [ -d "output/$subdir" ]; then
-                mkdir -p "cache-channel/$subdir"
-                cp -a "output/$subdir/." "cache-channel/$subdir/"
-              fi
-            done
-          fi
-
+          recipe="${{ github.event.inputs.recipe }}"
+          recipe="${recipe#recipes/}"
+          recipe="${recipe%/}"
+          test -f "recipes/$recipe/recipe.yaml"
           rm -rf output
-          mkdir -p output
-          trap 'rm -rf output' EXIT
-
-          init_empty_channel() {
-            local channel_dir="$1"
-            local subdir
-            for subdir in noarch ${{ matrix.target }}; do
-              mkdir -p "$channel_dir/$subdir"
-              if [ ! -f "$channel_dir/$subdir/repodata.json" ]; then
-                printf '{"info":{"subdir":"%s"},"packages":{},"packages.conda":{}}\n' "$subdir" \
-                  > "$channel_dir/$subdir/repodata.json"
-              fi
-            done
-          }
-
-          init_empty_channel output
-          init_empty_channel cache-channel
-
-          upload_built_packages() {
-            local file output_text status
-
-            while IFS= read -r file; do
-              [ -n "$file" ] || continue
-              echo "Uploading $file"
-              set +e
-              output_text="$(rattler-build upload prefix -c riscv "$file" 2>&1)"
-              status=$?
-              set -e
-              printf '%s\n' "$output_text"
-              if [ "$status" -ne 0 ]; then
-                if grep -qiE 'package already exists|HTTP 409' <<<"$output_text"; then
-                  echo "Package already exists, continuing: $file"
-                else
-                  return "$status"
-                fi
-              fi
-            done < <(find output -type f -name '*.conda' | sort)
-          }
-
-          recipe_dir="$(cat /tmp/recipes-to-build)"
-
-          rattler-build build --recipe-dir "$recipe_dir" \
+          rattler-build build --recipe-dir "recipes/$recipe" \
             --target-platform=${{ matrix.target }} \
             --output-dir=output \
-            --channel="file://${PWD}/output" \
-            --channel="file://${PWD}/cache-channel" \
             --channel="https://prefix.dev/riscv" \
             --channel=conda-forge
-          upload_built_packages
+          find output -type f -name '*.conda' -print -exec rattler-build upload prefix -c riscv {} \;

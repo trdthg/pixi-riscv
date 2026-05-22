@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
     inputs:
       recipe:
-        description: "Recipe name or path to build, for example 'mimick' or 'recipes/mimick'. Leave empty to build all recipes."
-        required: false
+        description: "Single recipe name or path to build, for example 'mimick' or 'recipes/mimick'."
+        required: true
         type: string
   pull_request:
     branches:
@@ -51,19 +51,25 @@ jobs:
             recipe_input="${recipe_input#recipes/}"
             recipe_input="${recipe_input%/}"
             if [ "$recipe_input" = "all" ]; then
-              find recipes -mindepth 2 -maxdepth 2 -name recipe.yaml -printf '%h\n' | sort > /tmp/recipes-to-build
+              echo "Building all recipes in one run is intentionally disabled."
+              echo "Trigger one recipe at a time so dependencies are uploaded by previous runs."
+              exit 1
             elif [ -f "recipes/${recipe_input}/recipe.yaml" ]; then
               printf 'recipes/%s\n' "$recipe_input" > /tmp/recipes-to-build
             else
               echo "Unknown recipe: $recipe_input"
               exit 1
             fi
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch requires a single recipe input."
+            exit 1
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | awk -F/ '/^recipes\/[^/]+\// { print $1 "/" $2 }' | sort -u > /tmp/recipes-to-build
           elif [ "${{ github.event_name }}" = "push" ]; then
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} | awk -F/ '/^recipes\/[^/]+\// { print $1 "/" $2 }' | sort -u > /tmp/recipes-to-build
           else
-            find recipes -mindepth 2 -maxdepth 2 -name recipe.yaml -printf '%h\n' | sort > /tmp/recipes-to-build
+            echo "Unsupported event: ${{ github.event_name }}"
+            exit 1
           fi
 
           if [ ! -s /tmp/recipes-to-build ]; then
@@ -72,100 +78,16 @@ jobs:
             exit 0
           fi
 
-          python3 - <<'PY'
-          from pathlib import Path
-          order = {
-              'recipes/linux-sysroot': 1,
-              'recipes/binutils': 2,
-              'recipes/m4': 2,
-              'recipes/gmp': 3,
-              'recipes/mpfr': 4,
-              'recipes/mpc': 5,
-              'recipes/cmake': 5,
-              'recipes/python': 6,
-              'recipes/make': 7,
-              'recipes/ninja': 8,
-              'recipes/numpy': 9,
-              'recipes/gcc': 11,
-              'recipes/gcc_linux-riscv64': 12,
-              'recipes/gxx_linux-riscv64': 13,
-              'recipes/pyparsing': 10,
-              'recipes/setuptools': 14,
-              'recipes/lark': 15,
-              'recipes/pyyaml': 15,
-              'recipes/hello': 16,
-              'recipes/rpyutils': 14,
-              'recipes/empy': 15,
-              'recipes/catkin-pkg': 20,
-              'recipes/ament-cmake-core': 30,
-              'recipes/python-cmake-module': 350,
-              'recipes/rosidl-parser': 355,
-              'recipes/rosidl-generator-c': 360,
-              'recipes/rosidl-generator-cpp': 370,
-              'recipes/rosidl-generator-py': 380,
-              'recipes/rosidl-core-generators': 390,
-              'recipes/rosidl-core-runtime': 391,
-              'recipes/rosidl-default-generators': 392,
-              'recipes/rosidl-default-runtime': 393,
-              'recipes/builtin-interfaces': 400,
-              'recipes/unique-identifier-msgs': 410,
-              'recipes/std-msgs': 420,
-              'recipes/geometry-msgs': 430,
-              'recipes/nav-msgs': 435,
-              'recipes/action-msgs': 440,
-              'recipes/rcl-interfaces': 441,
-              'recipes/service-msgs': 442,
-              'recipes/type-description-interfaces': 443,
-              'recipes/lifecycle-msgs': 444,
-              'recipes/rosidl-typesupport-interface': 445,
-              'recipes/rosgraph-msgs': 446,
-              'recipes/statistics-msgs': 447,
-              'recipes/gtest': 450,
-              'recipes/gmock': 460,
-              'recipes/ament-cmake-test': 470,
-              'recipes/ament-cmake-pytest': 475,
-              'recipes/ament-cmake-gtest': 480,
-              'recipes/ament-cmake-gmock': 490,
-              'recipes/rmw-implementation-cmake': 500,
-              'recipes/rmw': 510,
-              'recipes/rmw-implementation': 520,
-              'recipes/rmw-dds-common': 530,
-              'recipes/rosidl-typesupport-introspection-c': 540,
-              'recipes/rosidl-typesupport-introspection-cpp': 550,
-              'recipes/tracetools': 555,
-              'recipes/fastcdr': 560,
-              'recipes/foonathan-memory': 570,
-              'recipes/asio': 580,
-              'recipes/tinyxml2': 590,
-              'recipes/patchelf': 595,
-              'recipes/fastrtps': 600,
-              'recipes/fastrtps-cmake-module': 610,
-              'recipes/rosidl-typesupport-fastrtps-cpp': 620,
-              'recipes/rosidl-typesupport-fastrtps-c': 630,
-              'recipes/rmw-fastrtps-shared-cpp': 640,
-              'recipes/rmw-fastrtps-cpp': 650,
-              'recipes/rmw-fastrtps-dynamic-cpp': 660,
-              'recipes/yaml': 700,
-              'recipes/rcl-yaml-param-parser': 710,
-              'recipes/rcl-logging-interface': 720,
-              'recipes/fmt': 730,
-              'recipes/spdlog': 740,
-              'recipes/spdlog-vendor': 750,
-              'recipes/rcl-logging-spdlog': 760,
-              'recipes/rcl': 770,
-              'recipes/rcl-action': 780,
-              'recipes/rcl-lifecycle': 790,
-              'recipes/pybind11-vendor': 800,
-              'recipes/rclpy': 810,
-              'recipes/libstatistics-collector': 820,
-              'recipes/rclcpp': 830,
-          }
-          recipes = Path('/tmp/recipes-to-build').read_text().splitlines()
-          recipes = sorted(recipes, key=lambda item: (order.get(item, 10000), item))
-          Path('/tmp/recipes-to-build').write_text(''.join(f'{item}\n' for item in recipes))
-          PY
+          recipe_count="$(wc -l < /tmp/recipes-to-build | tr -d ' ')"
+          if [ "$recipe_count" -ne 1 ]; then
+            echo "This workflow builds exactly one recipe per run."
+            echo "Changed recipes:"
+            cat /tmp/recipes-to-build
+            echo "Build dependencies first in separate runs, then trigger the dependent recipe."
+            exit 1
+          fi
 
-          echo "Selected recipes:"
+          echo "Selected recipe:"
           cat /tmp/recipes-to-build
           echo "has_recipes=true" >> "$GITHUB_OUTPUT"
 
@@ -173,15 +95,40 @@ jobs:
         if: steps.recipes.outputs.has_recipes == 'true'
         shell: bash
         run: |
-          rm -rf output/bld output/test
-          mkdir -p output
+          if [ ! -d cache-channel ] && [ -d output ]; then
+            mkdir -p cache-channel
+            for subdir in noarch ${{ matrix.target }}; do
+              if [ -d "output/$subdir" ]; then
+                mkdir -p "cache-channel/$subdir"
+                cp -a "output/$subdir/." "cache-channel/$subdir/"
+              fi
+            done
+          fi
 
-          upload_new_packages() {
+          rm -rf output
+          mkdir -p output
+          trap 'rm -rf output' EXIT
+
+          init_empty_channel() {
+            local channel_dir="$1"
+            local subdir
+            for subdir in noarch ${{ matrix.target }}; do
+              mkdir -p "$channel_dir/$subdir"
+              if [ ! -f "$channel_dir/$subdir/repodata.json" ]; then
+                printf '{"info":{"subdir":"%s"},"packages":{},"packages.conda":{}}\n' "$subdir" \
+                  > "$channel_dir/$subdir/repodata.json"
+              fi
+            done
+          }
+
+          init_empty_channel output
+          init_empty_channel cache-channel
+
+          upload_built_packages() {
             if [ "${{ github.event_name }}" = "pull_request" ]; then
               return 0
             fi
 
-            local marker="$1"
             local file output_text status
 
             while IFS= read -r file; do
@@ -199,18 +146,16 @@ jobs:
                   return "$status"
                 fi
               fi
-            done < <(find output -type f -name '*.conda' -newer "$marker" | sort)
+            done < <(find output -type f -name '*.conda' | sort)
           }
 
-          while IFS= read -r recipe_dir; do
-            marker="$(mktemp)"
-            touch "$marker"
+          recipe_dir="$(cat /tmp/recipes-to-build)"
 
-            rattler-build build --recipe-dir "$recipe_dir" \
-              --target-platform=${{ matrix.target }} \
-              --channel="file://${PWD}/output" \
-              --channel="https://prefix.dev/riscv" \
-              --channel=conda-forge
-            upload_new_packages "$marker"
-            rm -f "$marker"
-          done < /tmp/recipes-to-build
+          rattler-build build --recipe-dir "$recipe_dir" \
+            --target-platform=${{ matrix.target }} \
+            --output-dir=output \
+            --channel="file://${PWD}/output" \
+            --channel="file://${PWD}/cache-channel" \
+            --channel="https://prefix.dev/riscv" \
+            --channel=conda-forge
+          upload_built_packages

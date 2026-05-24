@@ -63,6 +63,30 @@ build:
       jobs="$(nproc)"
       [ "$jobs" -le 4 ] || jobs=4
       make all-gcc
+      make configure-target-libgcc
+      libgcc_makefile="${{ target }}/libgcc/Makefile"
+      libgcc_mvars="gcc/libgcc.mvars"
+      marker='include $(gcc_objdir)/libgcc.mvars'
+      echo "--- gcc/libgcc.mvars ---"
+      cat "$libgcc_mvars"
+      echo "--- libgcc Makefile around generated include ---"
+      grep -n -C 5 -F "$marker" "$libgcc_makefile"
+      awk -v marker="$marker" -v mvars="$libgcc_mvars" '
+        $0 == marker {
+          while ((getline line < mvars) > 0) print line
+          close(mvars)
+          replaced = 1
+          next
+        }
+        { print }
+        END {
+          if (!replaced) {
+            print "did not find marker: " marker > "/dev/stderr"
+            exit 1
+          }
+        }
+      ' "$libgcc_makefile" > "$libgcc_makefile.tmp"
+      mv "$libgcc_makefile.tmp" "$libgcc_makefile"
       make -j"$jobs" all-target-libgcc
       make -j"$jobs" all-target-libstdc++-v3
       make -j"$jobs" all-target-libatomic

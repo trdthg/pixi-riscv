@@ -29,6 +29,15 @@ build:
         -e '/^include m2\/config-make$/s/^/# /' \
         -e '/^include m2\/Make-maintainer$/s/^/# /' \
         gcc/m2/Make-lang.in
+      awk '
+        /^include \$\(srcdir\)\/config\/riscv\/t-softfp32$/ {
+          while ((getline line < "libgcc/config/riscv/t-softfp32") > 0) print line
+          close("libgcc/config/riscv/t-softfp32")
+          next
+        }
+        { print }
+      ' libgcc/config/riscv/t-softfp64 > libgcc/config/riscv/t-softfp64.tmp
+      mv libgcc/config/riscv/t-softfp64.tmp libgcc/config/riscv/t-softfp64
     - mkdir build
     - cd build
     - |

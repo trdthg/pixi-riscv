@@ -11,10 +11,11 @@ source:
   sha256: dd16fb1d67bfab79a72f5e8390735c49e3e8e70b4945a15ab1f81ddb78658fb3
 
 build:
-  number: 3
+  number: 4
   dynamic_linking:
     binary_relocation: false
   script:
+    - export CFLAGS="${CFLAGS:-} -O0"
     - ./configure --prefix="$PREFIX"
     - make -j"$(nproc)"
     - make install

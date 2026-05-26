@@ -8,11 +8,11 @@ package:
   version: ${{ version }}
 
 source:
-  git: https://github.com/google/googletest.git
-  rev: ${{ git_rev }}
+  url: https://github.com/google/googletest/archive/${{ git_rev }}.tar.gz
+  sha256: c6ab3b6b33f51ef7465921f8f8c10c15d7cbc510761a15a18ad85babf6d73278
 
 build:
-  number: 0
+  number: 1
   script:
     - cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON
     - cmake --build build --target install -- -j"$(nproc)"

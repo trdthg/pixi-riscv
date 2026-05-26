@@ -11,18 +11,18 @@ source:
   sha256: 72b7570e5c8593de6ac4ab433b73eab18c5fb328880460c86ce32608141ad5c1
 
 build:
-  number: 0
+  number: 1
   dynamic_linking:
     binary_relocation: false
   script:
-    - ./bootstrap --prefix="$PREFIX" --parallel="$(nproc)" -- -DCMAKE_USE_OPENSSL=OFF
-    - make -j"$(nproc)"
-    - make install
+    - ./bootstrap --generator=Ninja --prefix="$PREFIX" --parallel="$(nproc)" -- -DCMAKE_USE_OPENSSL=OFF
+    - ninja -j"$(nproc)"
+    - ninja install
 
 requirements:
   build:
     - ${{ compiler("cxx") }}
-    - make
+    - ninja
 
 tests:
   - script:

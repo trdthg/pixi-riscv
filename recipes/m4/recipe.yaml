@@ -11,13 +11,13 @@ source:
   sha256: 63aede5c6d33b6d9b13511cd0be2cac046f2e70fd0a07aa9573a04a82783af96
 
 build:
-  number: 0
+  number: 1
   dynamic_linking:
     binary_relocation: false
   script:
     - ./configure --prefix="$PREFIX"
-    - make -j"$(nproc)"
-    - make install
+    - make -f Makefile -j"$(nproc)"
+    - make -f Makefile install
 
 requirements:
   build:

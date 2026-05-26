@@ -11,11 +11,12 @@ source:
   sha256: 63aede5c6d33b6d9b13511cd0be2cac046f2e70fd0a07aa9573a04a82783af96
 
 build:
-  number: 1
+  number: 2
   dynamic_linking:
     binary_relocation: false
   script:
     - ./configure --prefix="$PREFIX"
+    - rm -f GNUmakefile
     - make -f Makefile -j"$(nproc)"
     - make -f Makefile install
 

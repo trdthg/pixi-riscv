@@ -13,38 +13,17 @@ source:
   sha256: e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
 
 build:
-  number: 3
+  number: 4
   dynamic_linking:
     binary_relocation: false
   prefix_detection:
     ignore_binary_files: true
   script:
-    - |
-      # Only C/C++ are enabled, but GCC still parses every language make
-      # fragment during all-gcc. Avoid parser failures from generated includes
-      # belonging to disabled languages.
-      sed -i '/^include $(srcdir)\/ada\/Make-generated.in$/s/^/# /' \
-        gcc/ada/gcc-interface/Make-lang.in
-      sed -i \
-        -e '/^include m2\/config-make$/s/^/# /' \
-        -e '/^include m2\/Make-maintainer$/s/^/# /' \
-        gcc/m2/Make-lang.in
-      awk '
-        /^include \$\(srcdir\)\/config\/riscv\/t-softfp32$/ {
-          while ((getline line < "libgcc/config/riscv/t-softfp32") > 0) print line
-          close("libgcc/config/riscv/t-softfp32")
-          next
-        }
-        { print }
-      ' libgcc/config/riscv/t-softfp64 > libgcc/config/riscv/t-softfp64.tmp
-      mv libgcc/config/riscv/t-softfp64.tmp libgcc/config/riscv/t-softfp64
     - mkdir build
     - cd build
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      export am_cv_CC_dependencies_compiler_type=gcc3
-      export am_cv_CXX_dependencies_compiler_type=gcc3
       ../configure \
         --prefix="$PREFIX" \
         --target="${{ target }}" \
@@ -67,35 +46,9 @@ build:
     - |
       export PATH="$PREFIX/bin:$PATH"
       export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-      export am_cv_CC_dependencies_compiler_type=gcc3
-      export am_cv_CXX_dependencies_compiler_type=gcc3
       jobs="$(nproc)"
-      [ "$jobs" -le 4 ] || jobs=4
+      [ "$jobs" -le 6 ] || jobs=6
       make all-gcc
-      make configure-target-libgcc
-      libgcc_makefile="${{ target }}/libgcc/Makefile"
-      libgcc_mvars="gcc/libgcc.mvars"
-      marker='include $(gcc_objdir)/libgcc.mvars'
-      echo "--- gcc/libgcc.mvars ---"
-      cat "$libgcc_mvars"
-      echo "--- libgcc Makefile around generated include ---"
-      grep -n -C 5 -F "$marker" "$libgcc_makefile"
-      awk -v marker="$marker" -v mvars="$libgcc_mvars" '
-        $0 == marker {
-          while ((getline line < mvars) > 0) print line
-          close(mvars)
-          replaced = 1
-          next
-        }
-        { print }
-        END {
-          if (!replaced) {
-            print "did not find marker: " marker > "/dev/stderr"
-            exit 1
-          }
-        }
-      ' "$libgcc_makefile" > "$libgcc_makefile.tmp"
-      mv "$libgcc_makefile.tmp" "$libgcc_makefile"
       make -j"$jobs" all-target-libgcc
       make -j"$jobs" all-target-libstdc++-v3
       make -j"$jobs" all-target-libatomic

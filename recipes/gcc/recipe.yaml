@@ -1,6 +1,6 @@
 context:
   name: "gcc"
-  version: "13.2.0"
+  version: "15.2.0"
   target: "riscv64-conda-linux-gnu"
   sysroot_dir: "riscv64-conda-linux-gnu/sysroot"
 
@@ -10,10 +10,10 @@ package:
 
 source:
   url: https://ftp.gnu.org/gnu/gcc/gcc-${{ version }}/gcc-${{ version }}.tar.xz
-  sha256: e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
+  sha256: 438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e
 
 build:
-  number: 4
+  number: 0
   dynamic_linking:
     binary_relocation: false
   prefix_detection:
